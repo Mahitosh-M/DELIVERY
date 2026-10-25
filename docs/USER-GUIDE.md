@@ -88,3 +88,9 @@ The clock starts when the Manager closes the trip, not just when the driver taps
 Delivery addresses/phone snapshots, instructions, detailed attempts and image files are removed from Dispatch. Small report summaries, odometer continuity and financial/audit history remain. Closed details disappear from Dispatch lists. CISapp invoices, payments, customers and source delivery request data are untouched.
 
 Cached photos on a device are removed when it next successfully synchronises. A device that stays offline cannot receive a remote deletion. Downloaded backups/exports are not erased by this policy.
+
+## Camera and delivery evidence
+
+For odometer readings, signed delivery documents, and diesel receipts, choose **Take photo** to use the phone camera, or **Upload photo** for an existing image. Camera capture depends on support in the device browser; upload remains available. For delivery proof, **Capture signature** also opens the on-screen signing pad. Confirm that the image preview is correct before submitting.
+
+In CISapp Invoices, use the **Delivery required** tile before saving, or **Mark for delivery** on an existing invoice. **Delivery requests** opens delivery review. Route names appear in bold with loading days beneath the selected route.

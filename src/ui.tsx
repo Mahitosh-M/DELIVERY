@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type FormEvent,
 } from "react";
-import { X, Upload, Check, PenLine, Image } from "lucide-react";
+import { X, Upload, Camera, Check, PenLine, Image } from "lucide-react";
 import { localEvidence } from "./data";
 import { useApp } from "./context";
 export function Badge({ children }: { children: ReactNode }) {
@@ -281,13 +281,26 @@ export function EvidenceInput({
       ) : (
         <div className="evidence-actions">
           <label className="upload">
-            <Upload size={18} />
-            <span>Attach photo</span>
+            <Camera size={18} aria-hidden="true" />
+            <span>Take photo</span>
             <input
               aria-label={label}
               type="file"
               accept="image/*"
               capture="environment"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void upload(f);
+              }}
+            />
+          </label>
+          <label className="upload">
+            <Upload size={18} aria-hidden="true" />
+            <span>Upload photo</span>
+            <input
+              aria-label={`${label} upload`}
+              type="file"
+              accept="image/*"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) void upload(f);

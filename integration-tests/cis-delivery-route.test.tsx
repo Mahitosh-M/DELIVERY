@@ -11,6 +11,9 @@ it('CISapp staff see current route days and submit the selected route and stop',
  await waitFor(()=>expect(screen.getByLabelText('Delivery route')).not.toBeDisabled());
  fireEvent.change(screen.getByLabelText('Delivery route'),{target:{value:'r1'}});
  expect(screen.getByText('Weekly loading / dispatch: Monday, Wednesday')).toBeVisible();
+ expect(screen.getByRole('option',{name:'Route 1 - A to B'})).toBeVisible();
+ expect(screen.getByText('Route 1',{selector:'strong'})).toBeVisible();
+ expect(screen.getByText('A to B',{selector:'span'})).toBeVisible();
  fireEvent.change(screen.getByLabelText('Route stop'),{target:{value:'s1'}});
  fireEvent.change(screen.getByLabelText('Verified delivery address'),{target:{value:'Verified road'}});
  fireEvent.change(screen.getByLabelText('Delivery contact'),{target:{value:'0000000000'}});
