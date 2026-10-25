@@ -1,0 +1,8 @@
+﻿import {it,expect,vi,afterEach} from 'vitest';
+import {render,screen,fireEvent,cleanup} from '@testing-library/react';
+const api=vi.hoisted(()=>({connectionAuth:vi.fn(async()=>({authStateReady:async()=>{},currentUser:null})),connectionLogin:vi.fn(async()=>{throw Object.assign(new Error('Invalid credentials'),{code:'auth/invalid-credential'});}),connectionLogout:vi.fn(),bridge:vi.fn()}));
+vi.mock('../src/integration/connection',()=>api);
+import {SessionGate} from '../src/integration/session';
+afterEach(cleanup);
+it('starts at real login and exposes no workspace or role switcher',async()=>{render(<SessionGate><p>Private operational records</p></SessionGate>);await screen.findByRole('button',{name:'Sign in'});expect(screen.queryByText('Private operational records')).not.toBeInTheDocument();expect(screen.queryByLabelText('Demo profile')).not.toBeInTheDocument();expect(screen.queryByLabelText('Account')).not.toBeInTheDocument();});
+it('failed credentials never open workspace and password is cleared',async()=>{render(<SessionGate><p>Private operational records</p></SessionGate>);await screen.findByRole('button',{name:'Sign in'});fireEvent.change(screen.getByLabelText('Email'),{target:{value:'fictional@example.invalid'}});fireEvent.change(screen.getByLabelText('Password'),{target:{value:'fictional-password'}});fireEvent.click(screen.getByRole('button',{name:'Sign in'}));expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect');expect(screen.getByLabelText('Password')).toHaveValue('');expect(screen.queryByText('Private operational records')).not.toBeInTheDocument();});

@@ -1,0 +1,31 @@
+import {useEffect,useState,type FormEvent} from 'react';
+import {Plus,MapPin,ArrowUp,ArrowDown,Trash2,CalendarDays,Route as RouteIcon} from 'lucide-react';
+import {bridge} from './integration/connection';
+import {useSession} from './integration/session';
+import {useApp} from './context';
+import {Modal,Field,Badge} from './ui';
+import {uuid} from './domain';
+import {WEEKDAYS,routeDays,validateWeeklyRoute,type WeeklyRoute} from './weekly-routes';
+export function RouteSchedule(){
+ const {identity}=useSession(),{state,notify}=useApp();
+ const [routes,setRoutes]=useState<WeeklyRoute[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false),[edit,setEdit]=useState<WeeklyRoute|null>(null),[day,setDay]=useState('');
+ async function load(){setLoading(true);setError('');try{setRoutes((await bridge<{routes:WeeklyRoute[]}>(identity.issuer,'routeCatalog')).routes);}catch(e){setError((e as Error).message);}finally{setLoading(false);}}
+ useEffect(()=>{void load();},[identity.uid]);
+ async function save(e:FormEvent){e.preventDefault();if(!edit)return;setBusy(true);setError('');try{await bridge(identity.issuer,'saveWeeklyRoute',{value:validateWeeklyRoute(edit)});setEdit(null);await load();notify('Route and weekly days saved');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ function move(index:number,delta:number){if(!edit)return;const stops=[...edit.stops];[stops[index],stops[index+delta]]=[stops[index+delta],stops[index]];setEdit({...edit,stops});}
+ return <><div className="flex-between"><div><h2><RouteIcon size={22}/> Weekly routes</h2><p className="muted">Reusable roads and stops. Assign each route to any number of days.</p></div><button className="primary" onClick={()=>{setError('');setEdit({id:uuid(),name:'',from:'',to:'',shopIds:state.shops.filter(s=>s.active).map(s=>s.id),stops:[],days:[],active:true,revision:0});}}><Plus size={18}/> Add route</button></div>
+ {error&&<p className="notice" role="alert">{error}</p>}
+ <div className="toolbar"><Field label="Weekday"><select value={day} onChange={e=>setDay(e.target.value)}><option value="">All days</option>{[1,2,3,4,5,6,0].map(d=><option key={d} value={d}>{WEEKDAYS[d]}</option>)}</select></Field><button className="secondary" disabled={loading} onClick={()=>void load()}>Refresh routes</button></div>
+ <div className="weekly-day-grid">{[1,2,3,4,5,6,0].map(d=><button key={d} className={'summary-box '+(day===String(d)?'selected':'')} onClick={()=>setDay(day===String(d)?'':String(d))}><CalendarDays size={19}/><strong>{WEEKDAYS[d]}</strong><small>{routes.filter(r=>r.active&&r.days.includes(d)).map(r=>r.name).join(', ')||'No route assigned'}</small></button>)}</div>
+ {loading?<p>Loading routes...</p>:<div className="card-grid">{routes.filter(r=>day===''||r.days.includes(Number(day))).map(r=><article className="panel route-card" key={r.id}><div className="flex-between"><h3>{r.name}</h3><Badge>{r.active?'Active':'Inactive'}</Badge></div><p><MapPin size={16}/> {r.from} ? {r.to}</p><strong>{routeDays(r)}</strong><p className="muted">{r.shopIds.map(id=>state.shops.find(s=>s.id===id)?.name??id).join(' / ')}</p><ol>{r.stops.map(st=><li key={st.id}>{st.name}</li>)}</ol><button className="secondary" onClick={()=>{setError('');setEdit(structuredClone(r));}}>Edit route & days</button></article>)}</div>}
+ {!loading&&!routes.length&&<p>No routes configured. Add your first road and its stops.</p>}
+ {edit&&<Modal title={edit.revision?'Edit weekly route':'Create weekly route'} wide onClose={()=>{if(!busy)setEdit(null);}}><form onSubmit={save} className="form-grid">{error&&<p className="notice" role="alert">{error}</p>}
+ <Field label="Route name"><input required maxLength={100} value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})}/></Field>
+ <Field label="Starting point"><input required maxLength={150} value={edit.from} onChange={e=>setEdit({...edit,from:e.target.value})}/></Field>
+ <Field label="Destination"><input required maxLength={150} value={edit.to} onChange={e=>setEdit({...edit,to:e.target.value})}/></Field>
+ <fieldset><legend>Available to shops</legend>{state.shops.filter(s=>['SHOP_A','SHOP_S'].includes(s.id)).map(s=><label key={s.id}><input type="checkbox" checked={edit.shopIds.includes(s.id)} onChange={e=>setEdit({...edit,shopIds:e.target.checked?[...edit.shopIds,s.id]:edit.shopIds.filter(id=>id!==s.id)})}/> {s.name}</label>)}</fieldset>
+ <fieldset><legend>Weekly loading / dispatch days</legend><div className="weekly-day-grid">{[1,2,3,4,5,6,0].map(d=><label key={d}><input type="checkbox" checked={edit.days.includes(d)} onChange={e=>setEdit({...edit,days:e.target.checked?[...edit.days,d]:edit.days.filter(x=>x!==d)})}/> {WEEKDAYS[d]}</label>)}</div><small>Several routes may share a day. An empty selection means unscheduled.</small></fieldset>
+ <section><div className="flex-between"><h3>Ordered stops</h3><button type="button" className="secondary" disabled={edit.stops.length>=500} onClick={()=>setEdit({...edit,stops:[...edit.stops,{id:uuid(),name:''}]})}><Plus size={16}/> Add stop</button></div>{edit.stops.map((st,index)=><div className="weekly-stop" key={st.id}><span>{index+1}</span><input aria-label={'Stop '+(index+1)} required maxLength={150} value={st.name} onChange={e=>setEdit({...edit,stops:edit.stops.map(s=>s.id===st.id?{...s,name:e.target.value}:s)})}/><button type="button" aria-label={'Move stop '+(index+1)+' up'} disabled={index===0} onClick={()=>move(index,-1)}><ArrowUp size={17}/></button><button type="button" aria-label={'Move stop '+(index+1)+' down'} disabled={index===edit.stops.length-1} onClick={()=>move(index,1)}><ArrowDown size={17}/></button><button type="button" aria-label={'Remove stop '+(index+1)} onClick={()=>setEdit({...edit,stops:edit.stops.filter(s=>s.id!==st.id)})}><Trash2 size={17}/></button></div>)}</section>
+ <label><input type="checkbox" checked={edit.active} onChange={e=>setEdit({...edit,active:e.target.checked})}/> Active</label><p className="muted">Changes apply to future selections. Saved invoice requests and trips retain their original route details.</p><footer><button className="primary" disabled={busy}>Save weekly route</button><button type="button" className="secondary" disabled={busy} onClick={()=>setEdit(null)}>Cancel</button></footer></form></Modal>}
+ </>;
+}

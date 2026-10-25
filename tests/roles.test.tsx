@@ -1,0 +1,13 @@
+﻿import {beforeEach,afterEach,it,expect,vi} from 'vitest';
+import {render,screen,fireEvent,cleanup} from '@testing-library/react';
+import {seed} from './fixtures/seed';
+const session=vi.hoisted(()=>({identity:{uid:'driver-1',issuer:'delivery-28165',actorId:'driver-1',role:'DRIVER',shopIds:['SHOP_A'],name:'Test driver'},logout:vi.fn(),refresh:vi.fn()}));
+vi.mock('../src/integration/session',()=>({SessionGate:({children}:{children:unknown})=>children,useSession:()=>session}));
+vi.mock('../src/integration/connection',()=>({bridge:vi.fn(async()=>({shops:[],vehicles:[],users:[],roles:[],settings:{fuelTolerance:100}}))}));
+import App from '../src/App';
+import {db,repository} from '../src/data';
+beforeEach(async()=>{await db.delete();await db.open();await repository.init();await db.state.put(seed());window.history.replaceState({},'', '/');});
+afterEach(async()=>{cleanup();await db.delete();});
+it('authenticated Driver has no manager, customer or settings navigation',async()=>{session.identity={...session.identity,actorId:'driver-1',uid:'driver-1',role:'DRIVER'};render(<App/>);await screen.findByRole('heading',{name:'Ready for the road.'});expect(screen.queryByRole('link',{name:'Configuration'})).not.toBeInTheDocument();expect(screen.queryByRole('link',{name:'Customers & references'})).not.toBeInTheDocument();expect(screen.queryByLabelText('Demo profile')).not.toBeInTheDocument();expect(screen.getByRole('button',{name:'Sign out'})).toBeInTheDocument();});
+it('authenticated Admin can open configuration',async()=>{session.identity={...session.identity,actorId:'admin',uid:'admin',role:'ADMIN'};render(<App/>);fireEvent.click(await screen.findByRole('link',{name:'Configuration'}));await screen.findByRole('heading',{name:'Administration'});expect(screen.getByRole('button',{name:'Roles'})).toBeInTheDocument();});
+it('redirects authenticated Driver from manager-only deep link',async()=>{session.identity={...session.identity,actorId:'driver-1',uid:'driver-1',role:'DRIVER'};window.history.replaceState({},'', '/customers');render(<App/>);await screen.findByRole('heading',{name:'Ready for the road.'});expect(window.location.pathname).toBe('/');});

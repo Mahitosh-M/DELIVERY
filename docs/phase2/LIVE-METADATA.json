@@ -1,0 +1,273 @@
+{
+  "checkedAt": "2026-10-18T13:56:14.334Z",
+  "rules": {
+    "releaseHttpStatus": 200,
+    "rulesetHttpStatus": 200,
+    "liveSha256": "8c59fa08966f1e6e8d050725d7966b55b4bc17b87bfcbd3d1fcd909dfe505cac",
+    "localSha256": "8c59fa08966f1e6e8d050725d7966b55b4bc17b87bfcbd3d1fcd909dfe505cac",
+    "matchesLocal": true,
+    "liveLineCount": 2348,
+    "liveCollections": [
+      "databases",
+      "users",
+      "settings",
+      "customers",
+      "invoices",
+      "payments",
+      "dueCustomers",
+      "shopCash",
+      "cashExpenses",
+      "cashExpenseCorrections",
+      "shopTransfers",
+      "cashAdjustments",
+      "cashInitializations",
+      "counters",
+      "customerCreditProfiles",
+      "customerCreditSummaries",
+      "customerIntelligenceSummaries",
+      "customerMonthlySnapshots",
+      "businessMonthlySnapshots",
+      "migrationStatus",
+      "creditAuditLogs",
+      "giftHistory",
+      "giftItems",
+      "offers",
+      "monthlyCustomerStats",
+      "loyaltyLedger",
+      "pcBalances",
+      "rewardItems",
+      "redemptionRequests",
+      "overduePcRequests",
+      "bonusPcRequests"
+    ]
+  },
+  "samples": [
+    {
+      "collection": "users",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "email": "stringValue",
+        "role": "stringValue",
+        "name": "stringValue",
+        "customerName": "stringValue",
+        "updatedAt": "stringValue",
+        "active": "booleanValue",
+        "uid": "stringValue",
+        "customerId": "stringValue",
+        "createdAt": "stringValue"
+      },
+      "nonIdentifyingFlags": {
+        "role": "Medical",
+        "active": true
+      }
+    },
+    {
+      "collection": "customers",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "notes": "stringValue",
+        "previousOutstandingAmount": "integerValue",
+        "tierOverride": "booleanValue",
+        "status": "stringValue",
+        "createdAt": "stringValue",
+        "tier": "stringValue",
+        "paymentTerms": "stringValue",
+        "openingBalanceOutstandingAmount": "integerValue",
+        "advanceBalance": "integerValue",
+        "branchId": "stringValue",
+        "area": "stringValue",
+        "customerType": "stringValue",
+        "mobile": "stringValue",
+        "name": "stringValue",
+        "invoiceOutstandingAmount": "integerValue",
+        "latestOutstandingInvoiceId": "stringValue",
+        "totalOutstandingAmount": "integerValue",
+        "financialSummaryUpdatedAt": "stringValue",
+        "updatedAt": "stringValue"
+      },
+      "nonIdentifyingFlags": {}
+    },
+    {
+      "collection": "invoices",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "customerId": "stringValue",
+        "customerName": "stringValue",
+        "salesAmount": "integerValue",
+        "costAmount": "integerValue",
+        "transportAmount": "integerValue",
+        "totalSales": "integerValue",
+        "totalCost": "integerValue",
+        "totalProfit": "integerValue",
+        "notes": "stringValue",
+        "invoiceNumber": "stringValue",
+        "createdAt": "stringValue",
+        "date": "stringValue",
+        "dueDate": "stringValue",
+        "updatedAt": "stringValue",
+        "bufferDaysAtInvoice": "integerValue",
+        "pcPercentageAtInvoice": "integerValue",
+        "finalPcCutoffDate": "stringValue",
+        "termsEstimated": "booleanValue",
+        "creditDaysAtInvoice": "integerValue",
+        "savedDueDate": "stringValue",
+        "tierAtInvoice": "stringValue"
+      },
+      "nonIdentifyingFlags": {}
+    },
+    {
+      "collection": "payments",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "customerId": "stringValue",
+        "customerName": "stringValue",
+        "invoiceId": "stringValue",
+        "invoiceNumber": "stringValue",
+        "date": "stringValue",
+        "amount": "integerValue",
+        "cashDiscount": "integerValue",
+        "mode": "stringValue",
+        "notes": "stringValue",
+        "amountAppliedToInvoice": "integerValue",
+        "splitPaymentGroupId": "stringValue",
+        "splitPaymentTotalAmount": "integerValue",
+        "splitPaymentPart": "integerValue",
+        "splitPaymentCount": "integerValue",
+        "shopId": "stringValue",
+        "branchSystemVersion": "integerValue",
+        "affectsShopCash": "booleanValue",
+        "advanceCreatedAmount": "integerValue",
+        "advanceAppliedAmount": "integerValue",
+        "paymentKind": "stringValue",
+        "amountUsedForOldBalance": "integerValue",
+        "oldBalanceBeforePayment": "integerValue",
+        "oldBalanceAfterPayment": "integerValue",
+        "cashSyncedAmount": "integerValue",
+        "pcPolicyVersionAtPayment": "integerValue",
+        "createdAt": "stringValue",
+        "updatedAt": "stringValue"
+      },
+      "nonIdentifyingFlags": {
+        "shopId": "SHOP_A",
+        "branchSystemVersion": "1",
+        "paymentKind": "receipt",
+        "mode": "Cash",
+        "affectsShopCash": true
+      }
+    },
+    {
+      "collection": "shopCash",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "shopId": "stringValue",
+        "initializedBy": "stringValue",
+        "initializedAt": "timestampValue",
+        "openingBalance": "integerValue",
+        "totalTransferredIn": "integerValue",
+        "totalExpenses": "integerValue",
+        "totalTransferredOut": "doubleValue",
+        "totalCollections": "integerValue",
+        "lastCashOperationType": "stringValue",
+        "lastCashOperationId": "stringValue",
+        "updatedAt": "stringValue",
+        "availableBalance": "doubleValue"
+      },
+      "nonIdentifyingFlags": {
+        "shopId": "SHOP_A"
+      }
+    },
+    {
+      "collection": "cashExpenses",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "description": "stringValue",
+        "createdBy": "stringValue",
+        "amount": "integerValue",
+        "shopId": "stringValue",
+        "createdAt": "timestampValue",
+        "updatedBy": "stringValue",
+        "category": "stringValue",
+        "updatedAt": "timestampValue"
+      },
+      "nonIdentifyingFlags": {
+        "shopId": "SHOP_A"
+      }
+    },
+    {
+      "collection": "cashExpenseCorrections",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "expenseId": "stringValue",
+        "shopId": "stringValue",
+        "action": "stringValue",
+        "previousAmount": "integerValue",
+        "previousCategory": "stringValue",
+        "previousDescription": "stringValue",
+        "nextAmount": "integerValue",
+        "nextCategory": "stringValue",
+        "nextDescription": "stringValue",
+        "createdBy": "stringValue",
+        "createdAt": "timestampValue"
+      },
+      "nonIdentifyingFlags": {
+        "shopId": "SHOP_S"
+      }
+    },
+    {
+      "collection": "shopTransfers",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "fieldTypes": {
+        "fromShopId": "stringValue",
+        "toShopId": "stringValue",
+        "note": "stringValue",
+        "amount": "integerValue",
+        "createdBy": "stringValue",
+        "createdAt": "timestampValue"
+      },
+      "nonIdentifyingFlags": {}
+    }
+  ],
+  "databases": [
+    {
+      "project": "cisapp-236ab",
+      "httpStatus": 200,
+      "location": "asia-south1",
+      "type": "FIRESTORE_NATIVE"
+    },
+    {
+      "project": "delivery-28165",
+      "httpStatus": 403,
+      "errorStatus": "PERMISSION_DENIED",
+      "errorReasons": [
+        "SERVICE_DISABLED"
+      ]
+    }
+  ],
+  "digitalReceiptSamples": [
+    {
+      "mode": "UPI",
+      "httpStatus": 200,
+      "sampledDocuments": 1,
+      "affectsShopCash": null,
+      "cashSyncedAmountPresent": false,
+      "cashSyncedAmountPositive": false,
+      "branchVersion": null
+    },
+    {
+      "mode": "Bank Transfer",
+      "httpStatus": 200,
+      "sampledDocuments": 0
+    }
+  ],
+  "storageRules": {
+    "listHttpStatus": 200
+  }
+}

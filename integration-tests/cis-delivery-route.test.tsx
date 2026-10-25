@@ -1,0 +1,19 @@
+import {it,expect,vi,afterEach} from 'vitest';
+import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
+const request=vi.hoisted(()=>vi.fn());
+vi.mock('../../../CISapp/src/services/dispatchService',()=>({dispatchRequest:request}));
+import DeliveryDialog from '../../../CISapp/src/components/DeliveryDialog';
+afterEach(()=>{cleanup();vi.resetAllMocks();});
+it('CISapp staff see current route days and submit the selected route and stop',async()=>{
+ const route={id:'r1',name:'Route 1',from:'A',to:'B',shopIds:['SHOP_A'],days:[1,3],stops:[{id:'s1',name:'Middle road'}],active:true,revision:2};
+ request.mockImplementation(async(action:string)=>action==='routeCatalog'?{routes:[route]}:{saved:true});
+ render(<DeliveryDialog invoice={{id:'invoice-1',shopId:'SHOP_A',invoiceNumber:'A-1',customerName:'Fictional customer'}} onClose={()=>{}} onSaved={()=>{}}/>);
+ await waitFor(()=>expect(screen.getByLabelText('Delivery route')).not.toBeDisabled());
+ fireEvent.change(screen.getByLabelText('Delivery route'),{target:{value:'r1'}});
+ expect(screen.getByText('Weekly loading / dispatch: Monday, Wednesday')).toBeVisible();
+ fireEvent.change(screen.getByLabelText('Route stop'),{target:{value:'s1'}});
+ fireEvent.change(screen.getByLabelText('Verified delivery address'),{target:{value:'Verified road'}});
+ fireEvent.change(screen.getByLabelText('Delivery contact'),{target:{value:'0000000000'}});
+ fireEvent.submit(screen.getByRole('button',{name:'Save delivery request'}).closest('form')!);
+ await waitFor(()=>expect(request).toHaveBeenCalledWith('markDelivery',expect.objectContaining({invoiceId:'invoice-1',routeId:'r1',routeStopId:'s1'})));
+});

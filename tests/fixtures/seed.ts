@@ -1,0 +1,316 @@
+import type { AppState } from "../../src/domain";
+import { businessDate, now } from "../../src/domain";
+export function seed(): AppState {
+  const today = businessDate();
+  const s: AppState = {
+    id: "main",
+    schemaVersion: 2,
+    seededAt: now(),
+    settings: { fuelTolerance: 100 },
+    users: [
+      {
+        id: "admin",
+        name: "Demo Admin",
+        role: "ADMIN",
+        phone: "0000000000",
+        shopIds: ["SHOP_A", "SHOP_S"],
+        active: true,
+      },
+      {
+        id: "manager-a",
+        name: "Demo Manager · ASHOKA",
+        role: "MANAGER",
+        phone: "0000000000",
+        shopIds: ["SHOP_A"],
+        active: true,
+      },
+      {
+        id: "manager-s",
+        name: "Demo Manager · SMPA",
+        role: "MANAGER",
+        phone: "0000000000",
+        shopIds: ["SHOP_S"],
+        active: true,
+      },
+      {
+        id: "driver-1",
+        name: "Demo Driver Arun",
+        role: "DRIVER",
+        phone: "0000000000",
+        shopIds: ["SHOP_A", "SHOP_S"],
+        active: true,
+      },
+      {
+        id: "driver-2",
+        name: "Demo Driver Bala",
+        role: "DRIVER",
+        phone: "0000000000",
+        shopIds: ["SHOP_A", "SHOP_S"],
+        active: true,
+      },
+    ],
+    shops: [
+      {
+        id: "SHOP_A",
+        name: "ASHOKA",
+        town: "Maski",
+        address: "",
+        phone: "",
+        active: true,
+      },
+      {
+        id: "SHOP_S",
+        name: "SMPA",
+        town: "Sindhanur",
+        address: "",
+        phone: "",
+        active: true,
+      },
+    ],
+    vehicles: [
+      {
+        id: "van-1",
+        registration: "DEMO VAN 01",
+        type: "Delivery van",
+        fuelType: "Diesel",
+        expectedMileage: 15,
+        baseline: 25000,
+        homeShopId: "SHOP_A",
+        active: true,
+      },
+    ],
+    customers: [],
+    invoices: [],
+    jobs: [],
+    attempts: [],
+    trips: [],
+    collections: [],
+    fuels: [],
+    salesRequests: [],
+    audit: [],
+    outbox: [],
+  };
+  const names = [
+    "Lotus",
+    "Cedar",
+    "Maple",
+    "Orchid",
+    "Willow",
+    "Juniper",
+    "Iris",
+    "Pine",
+    "Jasmine",
+    "Birch",
+    "Tulip",
+    "Aspen",
+    "Daisy",
+    "Oak",
+    "Fern",
+  ];
+  for (let i = 0; i < 15; i++) {
+    const id = `customer-${i + 1}`,
+      shopId = i % 2 ? "SHOP_S" : "SHOP_A";
+    s.customers.push({
+      id,
+      externalId: null,
+      name: `Demo ${names[i]} Medical`,
+      phone: "0000000000",
+      alternate: "",
+      address: `${i + 1}, Fictional Market Road (demo address)`,
+      area: `Demo Area ${(i % 4) + 1}`,
+      landmark: "Demo market",
+      pin: "000000",
+      instructions:
+        "Fictional sample. Configure actual address before real use.",
+      active: true,
+    });
+    s.invoices.push({
+      id: `invoice-${i + 1}`,
+      externalId: null,
+      number: `DEMO-${String(i + 1).padStart(3, "0")}`,
+      customerId: id,
+      shopId,
+      date: today,
+      amount: 500000 + i * 25000,
+      outstanding: 500000 + i * 25000,
+      due: today,
+      notes: "Local operational reference only",
+    });
+    if (i < 10)
+      s.jobs.push({
+        id: `job-${i + 1}`,
+        invoiceId: `invoice-${i + 1}`,
+        customerId: id,
+        shopId,
+        date: today,
+        address: s.customers[i].address,
+        phone: "0000000000",
+        packages: 3 + (i % 4),
+        remaining: 3 + (i % 4),
+        description: "Pharmaceutical packages (demo)",
+        instructions: "Keep packages dry. Obtain acknowledgement.",
+        priority: i === 0 ? "High" : "Normal",
+        status: "Ready",
+        tripId: null,
+        revision: 1,
+        createdAt: now(),
+        returnsReconciled: true,
+      });
+  }
+  s.invoices.push({
+    id: "invoice-old",
+    externalId: null,
+    number: "DEMO-OLDER-001",
+    customerId: "customer-1",
+    shopId: "SHOP_A",
+    date: "2026-01-01",
+    amount: 300000,
+    outstanding: 300000,
+    due: "2026-01-15",
+    notes: "Historical outstanding example",
+  });
+  // Historical outcomes retain attempts and original package counts.
+  for (let i = 7; i < 10; i++) {
+    const j = s.jobs[i];
+    j.date = "2026-01-10";
+    j.status = i === 7 ? "Delivered" : i === 8 ? "Partial" : "Failed";
+    j.remaining = i === 7 ? 0 : i === 8 ? 2 : j.packages;
+    j.returnsReconciled = true;
+    j.tripId = "historical-demo";
+    s.attempts.push({
+      id: `attempt-demo-${i}`,
+      jobId: j.id,
+      tripId: "historical-demo",
+      actorId: "driver-1",
+      at: "2026-01-10T10:00:00.000Z",
+      outcome: j.status,
+      delivered: j.packages - j.remaining,
+      reason: i === 9 ? "Customer closed" : "",
+      note: "Historical fictional sample",
+      evidenceId: null,
+    });
+  }
+  s.collections.push(
+    {
+      id: "collection-demo-pending",
+      submissionId: "collection-demo-pending",
+      tripId: "historical-demo",
+      customerId: "customer-3",
+      shopId: "SHOP_A",
+      driverId: "driver-1",
+      invoiceIds: ["invoice-3"],
+      amount: 100000,
+      mode: "UPI",
+      reference: "DEMO-NOT-A-TRANSFER",
+      note: "Fictional review example",
+      evidenceId: null,
+      status: "Pending",
+      allocations: [],
+      unallocated: 100000,
+      createdAt: "2026-01-10T10:00:00.000Z",
+      approvedAt: null,
+      approvalId: null,
+      reviewNote: "",
+      digitalVerified: false,
+    },
+    {
+      id: "collection-demo-approved",
+      submissionId: "collection-demo-approved",
+      tripId: "historical-demo",
+      customerId: "customer-5",
+      shopId: "SHOP_A",
+      driverId: "driver-1",
+      invoiceIds: ["invoice-5"],
+      amount: 50000,
+      mode: "Bank transfer",
+      reference: "DEMO-VERIFIED-LOCALLY",
+      note: "Fictional approved example",
+      evidenceId: null,
+      status: "Approved",
+      allocations: [{ invoiceId: "invoice-5", amount: 50000 }],
+      unallocated: 0,
+      createdAt: "2026-01-10T10:00:00.000Z",
+      approvedAt: "2026-01-10T11:00:00.000Z",
+      approvalId: "approval-demo",
+      reviewNote: "Demo manual verification",
+      digitalVerified: true,
+    },
+  );
+  s.invoices[4].outstanding -= 50000;
+  s.trips.push({
+    id: "historical-demo",
+    name: "Historical demo route",
+    date: "2026-01-10",
+    startShopId: "SHOP_A",
+    endShopId: "SHOP_S",
+    vehicleId: "van-1",
+    primaryDriverId: "driver-1",
+    companionId: "driver-2",
+    status: "Closed",
+    stops: [
+      ...s.jobs.slice(7, 10).map((j) => ({
+        id: "historical-stop-" + j.id,
+        kind: "Delivery" as const,
+        customerId: j.customerId,
+        jobId: j.id,
+        completed: true,
+      })),
+      {
+        id: "historical-collection-3",
+        kind: "Collection",
+        customerId: "customer-3",
+        jobId: null,
+        completed: true,
+      },
+      {
+        id: "historical-collection-5",
+        kind: "Collection",
+        customerId: "customer-5",
+        jobId: null,
+        completed: true,
+      },
+    ],
+    opening: 24900,
+    closing: 25000,
+    openingPhoto: "demo-evidence",
+    closingPhoto: "demo-evidence",
+    openingNote: "Fictional sample",
+    endNote:
+      "Fictional historical sample; partial/failed return examples remain for manager review",
+    openingAdvance: 0,
+    startedAt: "2026-01-10T03:00:00.000Z",
+    endedAt: "2026-01-10T12:00:00.000Z",
+    loaded: true,
+    returnConfirmed: true,
+    approvedOdometer: true,
+    cashReceived: 0,
+    handoverConfirmed: true,
+    cashExplanation: "",
+    exceptions: ["Settlement: Fictional historical review example"],
+    revision: 1,
+  });
+  s.fuels.push({
+    id: "fuel-demo",
+    tripId: "historical-demo",
+    vehicleId: "van-1",
+    driverId: "driver-1",
+    shopId: "SHOP_A",
+    at: "2026-01-10T09:00:00.000Z",
+    litres: 20,
+    rate: 9500,
+    amount: 190000,
+    pump: "Fictional Demo Pump",
+    odometer: 24960,
+    receiptId: "demo-evidence",
+    source: "Personal",
+    status: "Approved",
+    reimbursement: "Settled",
+    reviewNote: "Fictional seeded example, not a genuine bill",
+    settledAt: "2026-01-10T12:00:00.000Z",
+    fullTank: false,
+  });
+  for (const a of s.attempts)
+    if (a.outcome === "Delivered" || a.outcome === "Partial")
+      a.evidenceId = "demo-evidence";
+  return s;
+}
