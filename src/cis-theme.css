@@ -110,6 +110,7 @@ td {color:#edf0f7;}td strong {color:#fff;}tbody tr:hover {background:#ffffff08;}
 .overlay {background:#020617c9;backdrop-filter:blur(9px);}
 .modal {border-radius:22px;box-shadow:0 24px 70px #0005;}
 .modal form>footer {background:#171333;}
+.confirmation-dialog form>footer {position:static;background:transparent;border:0;box-shadow:none;padding:0;justify-content:center;}
 .upload,.evidence-preview {border-color:var(--role-card-border);color:var(--role-card-muted);background:#ffffff06;}
 .signature,.proof-image,.evidence-preview img {background:#fff;}
 .saved {color:#aff0d3;}

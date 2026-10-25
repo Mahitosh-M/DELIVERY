@@ -48,11 +48,13 @@ export function Modal({
   children,
   onClose,
   wide = false,
+  className = "",
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  className?: string;
 }) {
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
@@ -83,7 +85,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={"modal " + (wide ? "wide" : "")}
+        className={["modal", wide ? "wide" : "", className].filter(Boolean).join(" ")}
         onKeyDown={(e) => {
           if (e.key === "Tab") {
             const items = box.current?.querySelectorAll<HTMLElement>(
@@ -194,7 +196,7 @@ export function Confirm({
   children?: ReactNode;
 }) {
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal title={title} onClose={onClose} className="confirmation-dialog">
       <Form
         label="Confirm"
         onSubmit={async () => {
