@@ -94,3 +94,7 @@ Cached photos on a device are removed when it next successfully synchronises. A 
 For odometer readings, signed delivery documents, and diesel receipts, choose **Take photo** to use the phone camera, or **Upload photo** for an existing image. Camera capture depends on support in the device browser; upload remains available. For delivery proof, **Capture signature** also opens the on-screen signing pad. Confirm that the image preview is correct before submitting.
 
 In CISapp Invoices, use the **Delivery required** tile before saving, or **Mark for delivery** on an existing invoice. **Delivery requests** opens delivery review. Route names appear in bold with loading days beneath the selected route.
+
+## Phone and desktop layout
+
+Dispatch uses the same compact app layout on phones, tablets and desktop, with a centred workspace on larger screens. Use the bottom navigation for daily work and **More** for the remaining authorised modules. Dashboard tiles have centred icons and two columns; narrow phones stack reporting summaries so values stay readable.

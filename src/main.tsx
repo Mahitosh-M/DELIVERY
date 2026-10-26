@@ -5,6 +5,7 @@ import { getFirebaseApp } from "./firebase/client";
 import { repository } from "./data";
 import "./styles.css";
 import "./cis-theme.css";
+import "./app-layout.css";
 getFirebaseApp();
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 class Boundary extends React.Component<

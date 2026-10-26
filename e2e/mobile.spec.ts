@@ -29,6 +29,9 @@ async function signInFixture(page:Page,role:'ADMIN'|'MANAGER'|'DRIVER', active=f
 for(const role of ['ADMIN','MANAGER','DRIVER'] as const){
  test(`${role} phone navigation and operational layout`,async({page})=>{
   await page.setViewportSize({width:390,height:844});await signInFixture(page,role);await page.screenshot({path:`test-results/clean-overview-${role.toLowerCase()}.png`});
+  const tiles=page.locator('.action-tiles .action-tile');expect(await tiles.count()).toBeGreaterThan(0);
+  for(const tile of await tiles.all()){const box=await tile.boundingBox();expect(box!.height).toBeGreaterThanOrEqual(100);expect(await tile.locator('strong').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);}
+
   const nav=page.getByRole('navigation',{name:'Mobile navigation'});await expect(nav).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await nav.getByRole('button',{name:'More navigation'}).click();
@@ -37,6 +40,11 @@ for(const role of ['ADMIN','MANAGER','DRIVER'] as const){
   await page.screenshot({path:`test-results/mobile-${role.toLowerCase()}.png`});
   for(const width of [320,390,768]){await page.setViewportSize({width,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${role} overflow at ${width}px`).toBe(true);}
   await page.setViewportSize({width:1280,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/cis-theme-desktop-${role.toLowerCase()}.png`});
+  await expect(nav).toBeVisible();const shell=await page.locator('.app-shell').boundingBox();expect(shell!.width).toBe(460);expect(Math.abs(shell!.x-(1280-460)/2)).toBeLessThan(2);
+  await nav.getByRole('link',{name:'Home',exact:true}).click();await page.screenshot({path:`test-results/portal-desktop-${role.toLowerCase()}.png`});
+  const desktopTiles=await page.locator('.action-tile').all();const first=await desktopTiles[0].boundingBox();const second=await desktopTiles[1].boundingBox();expect(Math.abs(first!.y-second!.y)).toBeLessThan(2);
+  await nav.getByRole('button',{name:'More navigation'}).click();await expect(page.getByRole('button',{name:'Close navigation'})).toBeVisible();await page.getByRole('button',{name:'Close navigation'}).click();
+
  });
 }
 test('Admin phone settings opens a usable vehicle form',async({page})=>{await page.setViewportSize({width:390,height:844});await signInFixture(page,'ADMIN');await page.getByRole('button',{name:'More navigation'}).click();await page.getByRole('link',{name:'Configuration',exact:true}).click();await page.getByRole('button',{name:'Vehicles',exact:true}).click();await page.getByRole('button',{name:'Add vehicle',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByLabel('Registration number')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await dialog.getByRole('button',{name:'Save',exact:true}).scrollIntoViewIfNeeded();await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeVisible();await page.screenshot({path:'test-results/mobile-vehicle-form.png'});});
