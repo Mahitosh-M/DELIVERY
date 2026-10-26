@@ -258,6 +258,7 @@ export interface AppState {
       {
         cloudId: string;
         status: string;
+        reviewedAt?: string;
         postedAmount: number;
         receiptIds: string[];
         unallocated: number;

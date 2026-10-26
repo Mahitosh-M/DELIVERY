@@ -97,4 +97,12 @@ In CISapp Invoices, use the **Delivery required** tile before saving, or **Mark 
 
 ## Phone and desktop layout
 
-Dispatch uses the same compact app layout on phones, tablets and desktop, with a centred workspace on larger screens. Use the bottom navigation for daily work and **More** for the remaining authorised modules. Dashboard tiles have centred icons and two columns; narrow phones stack reporting summaries so values stay readable.
+Dispatch uses the same compact app layout on phones, tablets and desktop, with a centred workspace on larger screens. Drivers start on **My trips** and use **Trips**, **Collections**, **Cash**, and **Sales** in the bottom navigation. Managers and Admin use **More** for the remaining authorised modules. Dashboard tiles have centred icons and two columns; narrow phones stack reporting summaries so values stay readable.
+
+## Driver navigation and collection history
+
+Drivers no longer have a Home page, More menu or standalone Fuel page. Opening a saved Home/Fuel link returns to **My trips**. Open a trip to use **Record diesel**, including its camera and upload controls. Connection status and sign-out remain available in the header.
+
+**My collections** keeps pending submissions visible until a decision. Approved and rejected entries remain visible for seven full days after the actual decision, then leave the driver list and details screen. The display updates when the screen is opened, once a minute while open, and when the app regains focus. Reloading does not restart the seven-day clock. Records with an unknown decision date remain visible until that date is available.
+
+This is a driver-screen rule. Ledger entries, physical cash, receipts, allocations, report totals, Manager/Admin review history and audit records are retained. No CISapp records are deleted.

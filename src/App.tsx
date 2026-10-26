@@ -46,7 +46,7 @@ const navigation = [
     path: "/",
     label: "Overview",
     icon: LayoutDashboard,
-    roles: ["ADMIN", "MANAGER", "DRIVER"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     path: "/deliveries",
@@ -88,7 +88,7 @@ const navigation = [
     path: "/fuel",
     label: "Fuel & reimbursements",
     icon: Fuel,
-    roles: ["ADMIN", "MANAGER", "DRIVER"],
+    roles: ["ADMIN", "MANAGER"],
   },
   {
     path: "/sales",
@@ -120,6 +120,8 @@ function Shell() {
   const {identity,logout}=useSession();
   const location = useLocation();
   const [menu, setMenu] = useState(false);
+  const isDriver = user.role === "DRIVER";
+  const startPage = isDriver ? "/trips" : "/";
   const nav = navigation.filter((n) => n.roles.includes(user.role));
   const current = navigation.find((n) => n.path === location.pathname);
   const allowed =
@@ -128,7 +130,7 @@ function Shell() {
   return (
     <div className="app-shell">
       <PullToSync/>
-      <aside className={"sidebar " + (menu ? "open" : "")}>
+      {!isDriver && <aside className={"sidebar " + (menu ? "open" : "")}>
         <div className="brand">
           <span className="brand-icon">
             <Truck size={25} />
@@ -173,18 +175,18 @@ function Shell() {
           ))}
         </nav>
         <div className="sidebar-bottom"><small>CIS Dispatch</small></div>
-      </aside>
-      {menu && <div className="sidebar-scrim" onClick={() => setMenu(false)} />}
+      </aside>}
+      {!isDriver && menu && <div className="sidebar-scrim" onClick={() => setMenu(false)} />}
       <div className="main-shell">
         <header className="topbar">
           <div className="actions">
-            <button
+            {!isDriver && <button
               className="mobile-only icon-button"
               aria-label="Open navigation"
               onClick={() => setMenu(true)}
             >
               <Menu size={22} />
-            </button>
+            </button>}
             <span className="mobile-page-title">{current?.label ?? "Trip details"}</span>
             <span className="breadcrumb">
               Workspace <span>/</span>{" "}
@@ -203,10 +205,10 @@ function Shell() {
         <div className="workspace-status"><span>Dev preview - real data</span><NavLink to="/connection">{navigator.onLine ? "Connection" : "Offline - saved on device"}</NavLink></div>
         <main>
           {!allowed ? (
-            <Navigate to="/" replace />
+            <Navigate to={startPage} replace />
           ) : (
             <Routes>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={isDriver ? <Navigate to="/trips" replace /> : <Dashboard />} />
               <Route path="/deliveries" element={<DeliveriesPage />} />
               <Route path="/routes" element={<RoutesPage />} />
               <Route path="/trips" element={<TripsPage />} />
@@ -220,14 +222,14 @@ function Shell() {
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/audit" element={<AuditPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" />} />
+              <Route path="*" element={<Navigate to={startPage} replace />} />
             </Routes>
           )}
         </main>
       </div>
       <nav className="bottom-nav" aria-label="Mobile navigation">
-        {nav.filter(n=>(user.role==='DRIVER'?['/','/trips','/collections','/fuel']:['/','/deliveries','/routes','/collections']).includes(n.path)).map(n=><NavLink end={n.path==='/'} key={n.path} to={n.path}><n.icon size={21}/><span>{n.path==='/'?'Home':n.path==='/deliveries'?'Jobs':n.path==='/routes'?'Routes':n.path==='/trips'?'Trips':n.path==='/fuel'?'Fuel':'Collections'}</span></NavLink>)}
-        <button className="mobile-more" aria-label="More navigation" aria-expanded={menu} onClick={()=>setMenu(!menu)}><Menu size={21}/><span>More</span></button>
+        {nav.filter(n=>(isDriver?['/trips','/collections','/cash','/sales']:['/','/deliveries','/routes','/collections']).includes(n.path)).map(n=><NavLink end={n.path==='/'} key={n.path} to={n.path}><n.icon size={21}/><span>{n.path==='/'?'Home':n.path==='/deliveries'?'Jobs':n.path==='/routes'?'Routes':n.path==='/trips'?'Trips':n.path==='/cash'?'Cash':n.path==='/sales'?'Sales':'Collections'}</span></NavLink>)}
+        {!isDriver && <button className="mobile-more" aria-label="More navigation" aria-expanded={menu} onClick={()=>setMenu(!menu)}><Menu size={21}/><span>More</span></button>}
       </nav>
     </div>
   );

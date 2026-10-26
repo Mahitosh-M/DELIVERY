@@ -3,12 +3,20 @@ import {validateWeeklyRoute,type WeeklyRoute} from '../src/weekly-routes';
 ﻿import {test,expect,type Page} from '@playwright/test';
 import {seed} from '../tests/fixtures/seed';
 import {applyCommand} from '../src/commands';
-async function signInFixture(page:Page,role:'ADMIN'|'MANAGER'|'DRIVER', active=false,draft=false,weekly=false,cis=false,expired=false,closing=false){
+async function signInFixture(page:Page,role:'ADMIN'|'MANAGER'|'DRIVER', active=false,draft=false,weekly=false,cis=false,expired=false,closing=false,collectionHistory=false){
  const stats={pulls:0,identities:0,operations:0};
  const weeklyRoutes:WeeklyRoute[]=[];
+ const decisionClaims:import("../src/collectionVisibility").CollectionDecisionClaim[]=[];
  const state=seed(),user=state.users.find(u=>u.role===role)!;
  if(role==='DRIVER'){
   const job=state.jobs.find(j=>j.remaining>0)!;const trip={...state.trips[0],id:'mobile-current-trip',name:'Phone delivery route',date:job.date,primaryDriverId:user.id,companionId:null,status:active?'Active' as const:'Released' as const,opening:active?25000:null,closing:null,openingPhoto:null,closingPhoto:null,startedAt:null,endedAt:null,loaded:false,handoverConfirmed:false,approvedOdometer:false,stops:[{id:'phone-stop',kind:'Delivery' as const,customerId:job.customerId,jobId:job.id,completed:false}]};job.tripId=trip.id;job.shopId='SHOP_S';job.status='Assigned';state.trips.push(trip);
+ }
+ if(collectionHistory){
+  const template=state.collections[0],trip=state.trips.find(t=>t.id==='mobile-current-trip')??state.trips[0];
+  const ago=(days:number)=>new Date(Date.now()-days*86400000).toISOString();
+  state.integration={lastPull:new Date().toISOString(),identityKey:'test-history',publishedTripIds:[],conflicts:[],collectionLinks:{}};
+  const samples=[{id:'old-approved',status:'Approved' as const,days:8,amount:71101},{id:'recent-approved',status:'Approved' as const,days:6,amount:72202},{id:'pending',status:'Pending' as const,days:20,amount:73303},{id:'recent-rejected',status:'Rejected' as const,days:6,amount:74404},{id:'old-rejected',status:'Rejected' as const,days:8,amount:75505}];
+  state.collections=samples.map(v=>{const c={...template,id:v.id,submissionId:v.id,driverId:state.users.find(u=>u.role==='DRIVER')!.id,tripId:trip.id,shopId:trip.startShopId,status:v.status,amount:v.amount,reference:v.id,createdAt:ago(20),approvedAt:v.status==='Approved'?new Date().toISOString():null};const status=v.status==='Approved'?'Posted':v.status;state.integration!.collectionLinks[c.id]={cloudId:c.id,status,postedAmount:0,receiptIds:[],unallocated:0};decisionClaims.push({id:c.id,actorId:c.driverId,submissionId:c.submissionId,status,...(v.status==='Approved'?{postedAt:ago(v.days)}:v.status==='Rejected'?{reviewedAt:ago(v.days)}:{})});return c;});
  }
  if(draft){const trip=structuredClone(state.trips[0]);trip.id='manager-draft';trip.name='Manager draft route';trip.startShopId=user.shopIds[0];trip.status='Draft';trip.opening=null;trip.closing=null;trip.startedAt=null;trip.endedAt=null;state.trips.push(trip);}
  if(weekly){const route:WeeklyRoute={id:'planner-weekly',name:'Weekly road',from:'A',to:'B',shopIds:['SHOP_A'],days:[0,1,2,3,4,5,6],stops:[{id:'first',name:'First road'},{id:'later',name:'Later road'}],active:true,revision:1};weeklyRoutes.push(route);state.jobs.filter(j=>j.shopId==='SHOP_A'&&j.status==='Ready'&&!j.tripId).slice(0,2).forEach((j,index)=>{j.routeId=route.id;j.routeName=route.name;j.routeStopId=index===0?'later':'first';j.routeStopName=index===0?'Later road':'First road';});}
@@ -22,31 +30,30 @@ async function signInFixture(page:Page,role:'ADMIN'|'MANAGER'|'DRIVER', active=f
  let rejectedFirst=false;
  await page.route('https://identitytoolkit.googleapis.com/**',route=>{if(cis&&!rejectedFirst&&route.request().url().includes('accounts:signInWithPassword')){rejectedFirst=true;return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:{code:400,message:'INVALID_LOGIN_CREDENTIALS'}})});}return route.fulfill({contentType:'application/json',body:JSON.stringify(route.request().url().includes('accounts:lookup')?{users:[{localId:user.id,email:'fixture@example.invalid',displayName:user.name}]}:{localId:user.id,email:'fixture@example.invalid',displayName:user.name,idToken,refreshToken:'test-only-refresh',expiresIn:'3600'})});});
  await page.route('https://securetoken.googleapis.com/**',route=>route.fulfill({status:400,contentType:'application/json',body:'{"error":{"message":"TEST_ONLY"}}'}));
- await page.route('https://asia-south1-cisapp-236ab.cloudfunctions.net/**',async route=>{const body=route.request().postDataJSON();if(body.action==='pull')stats.pulls++;if(body.action==='identity')stats.identities++;if(body.action==='operation')stats.operations++;let result:unknown=identity;if(body.action==='operation'){applyCommand(state,user,body.payload.command,()=>true);const c=body.payload.command;const tripId=c.type==='reviewFuel'?state.fuels.find(f=>f.id===c.id)?.tripId:c.id;result={id:body.payload.id,status:'Acknowledged',...(['reviewFuel','handover','closeTrip'].includes(c.type)?{reviewed:{trip:state.trips.find(t=>t.id===tripId),fuels:state.fuels.filter(f=>f.tripId===tripId),audit:[]}}:{})};}if(body.action==='pull')result={operational:state};if(body.action==='routeCatalog')result={routes:weeklyRoutes};if(body.action==='saveWeeklyRoute'){const value=validateWeeklyRoute(body.payload.value);const old=weeklyRoutes.find(r=>r.id===value.id);if(old)weeklyRoutes.splice(weeklyRoutes.indexOf(old),1);const saved={...value,revision:value.revision+1};weeklyRoutes.push(saved);result=saved;}if(body.action==='administration')result={shops:state.shops,vehicles:state.vehicles,users:[],roles:[{id:'ADMIN',name:'Administrator',baseRole:'ADMIN',permissions:[],active:true,protected:true}],settings:state.settings};await route.fulfill({contentType:'application/json',body:JSON.stringify({result})});});
+ await page.route('https://asia-south1-cisapp-236ab.cloudfunctions.net/**',async route=>{const body=route.request().postDataJSON();if(body.action==='pull')stats.pulls++;if(body.action==='identity')stats.identities++;if(body.action==='operation')stats.operations++;let result:unknown=identity;if(body.action==='operation'){applyCommand(state,user,body.payload.command,()=>true);const c=body.payload.command;const tripId=c.type==='reviewFuel'?state.fuels.find(f=>f.id===c.id)?.tripId:c.id;result={id:body.payload.id,status:'Acknowledged',...(['reviewFuel','handover','closeTrip'].includes(c.type)?{reviewed:{trip:state.trips.find(t=>t.id===tripId),fuels:state.fuels.filter(f=>f.tripId===tripId),audit:[]}}:{})};}if(body.action==='pull')result={operational:state,claims:decisionClaims};if(body.action==='routeCatalog')result={routes:weeklyRoutes};if(body.action==='saveWeeklyRoute'){const value=validateWeeklyRoute(body.payload.value);const old=weeklyRoutes.find(r=>r.id===value.id);if(old)weeklyRoutes.splice(weeklyRoutes.indexOf(old),1);const saved={...value,revision:value.revision+1};weeklyRoutes.push(saved);result=saved;}if(body.action==='administration')result={shops:state.shops,vehicles:state.vehicles,users:[],roles:[{id:'ADMIN',name:'Administrator',baseRole:'ADMIN',permissions:[],active:true,protected:true}],settings:state.settings};await route.fulfill({contentType:'application/json',body:JSON.stringify({result})});});
  await page.goto('/');await page.getByLabel('Email',{exact:true}).fill('fixture@example.invalid');await page.getByLabel('Password',{exact:true}).fill('UI-test-only-password');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByRole('navigation',{name:'Mobile navigation'})).toBeAttached();
  return stats;
 }
 for(const role of ['ADMIN','MANAGER','DRIVER'] as const){
  test(`${role} phone navigation and operational layout`,async({page})=>{
-  await page.setViewportSize({width:390,height:844});await signInFixture(page,role);await page.screenshot({path:`test-results/clean-overview-${role.toLowerCase()}.png`});
-  const tiles=page.locator('.action-tiles .action-tile');expect(await tiles.count()).toBeGreaterThan(0);
-  for(const tile of await tiles.all()){const box=await tile.boundingBox();expect(box!.height).toBeGreaterThanOrEqual(100);expect(await tile.locator('strong').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);}
-
+  await page.setViewportSize({width:390,height:844});await signInFixture(page,role);
   const nav=page.getByRole('navigation',{name:'Mobile navigation'});await expect(nav).toBeVisible();
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await nav.getByRole('button',{name:'More navigation'}).click();
-  if(role==='DRIVER'){await expect(page.getByRole('link',{name:'Configuration',exact:true})).toHaveCount(0);await page.getByRole('link',{name:'Trips & shifts',exact:true}).click();await page.getByRole('link').filter({hasText:'Phone delivery route'}).click();}
-  else{await page.getByRole('link',{name:'Customers & references',exact:true}).click();await expect(page.locator('.responsive-table tbody tr').first()).toBeVisible();await expect(page.locator('.responsive-table tbody td').first()).toHaveAttribute('data-label','Customer');}
+  if(role==='DRIVER'){
+   await expect(page.getByRole('heading',{name:'My trips',exact:true})).toBeVisible();await expect(page).toHaveURL(/\/trips$/);
+   await expect(nav.getByRole('link')).toHaveText(['Trips','Collections','Cash','Sales']);await expect(page.getByRole('button',{name:'More navigation'})).toHaveCount(0);await expect(page.getByRole('button',{name:'Open navigation'})).toHaveCount(0);
+   await page.getByRole('link').filter({hasText:'Phone delivery route'}).click();
+  }else{
+   const tiles=page.locator('.action-tiles .action-tile');expect(await tiles.count()).toBeGreaterThan(0);for(const tile of await tiles.all()){const box=await tile.boundingBox();expect(box!.height).toBeGreaterThanOrEqual(100);expect(await tile.locator('strong').evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);}
+   await nav.getByRole('button',{name:'More navigation'}).click();await page.getByRole('link',{name:'Customers & references',exact:true}).click();await expect(page.locator('.responsive-table tbody tr').first()).toBeVisible();
+  }
   await page.screenshot({path:`test-results/mobile-${role.toLowerCase()}.png`});
   for(const width of [320,390,768]){await page.setViewportSize({width,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${role} overflow at ${width}px`).toBe(true);}
-  await page.setViewportSize({width:1280,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/cis-theme-desktop-${role.toLowerCase()}.png`});
-  await expect(nav).toBeVisible();const shell=await page.locator('.app-shell').boundingBox();expect(shell!.width).toBe(460);expect(Math.abs(shell!.x-(1280-460)/2)).toBeLessThan(2);
-  await nav.getByRole('link',{name:'Home',exact:true}).click();await page.screenshot({path:`test-results/portal-desktop-${role.toLowerCase()}.png`});
-  const desktopTiles=await page.locator('.action-tile').all();const first=await desktopTiles[0].boundingBox();const second=await desktopTiles[1].boundingBox();expect(Math.abs(first!.y-second!.y)).toBeLessThan(2);
-  await nav.getByRole('button',{name:'More navigation'}).click();await expect(page.getByRole('button',{name:'Close navigation'})).toBeVisible();await page.getByRole('button',{name:'Close navigation'}).click();
-
+  await page.setViewportSize({width:1280,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const shell=await page.locator('.app-shell').boundingBox();expect(shell!.width).toBe(460);expect(Math.abs(shell!.x-(1280-460)/2)).toBeLessThan(2);
+  await nav.getByRole('link',{name:role==='DRIVER'?'Trips':'Home',exact:true}).click();await page.screenshot({path:`test-results/portal-desktop-${role.toLowerCase()}.png`});
+  if(role!=='DRIVER'){const desktopTiles=await page.locator('.action-tile').all();const first=await desktopTiles[0].boundingBox();const second=await desktopTiles[1].boundingBox();expect(Math.abs(first!.y-second!.y)).toBeLessThan(2);await nav.getByRole('button',{name:'More navigation'}).click();await page.getByRole('button',{name:'Close navigation'}).click();}
  });
 }
+
 test('Admin phone settings opens a usable vehicle form',async({page})=>{await page.setViewportSize({width:390,height:844});await signInFixture(page,'ADMIN');await page.getByRole('button',{name:'More navigation'}).click();await page.getByRole('link',{name:'Configuration',exact:true}).click();await page.getByRole('button',{name:'Vehicles',exact:true}).click();await page.getByRole('button',{name:'Add vehicle',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByLabel('Registration number')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await dialog.getByRole('button',{name:'Save',exact:true}).scrollIntoViewIfNeeded();await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeVisible();await page.screenshot({path:'test-results/mobile-vehicle-form.png'});});
 
 test('Driver confirms cross-shop packages loaded and retains the result after reload',async({page})=>{await page.setViewportSize({width:390,height:844});await signInFixture(page,'DRIVER',true);await page.goto('/trips/mobile-current-trip');await page.getByRole('button',{name:'Confirm packages loaded',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Confirm packages loaded',exact:true});await dialog.getByRole('button',{name:'Confirm',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByRole('button',{name:'Confirm packages loaded',exact:true})).toHaveCount(0);await expect(page.getByText('Out for delivery',{exact:true}).first()).toBeVisible();await page.reload();await expect(page.getByRole('heading',{name:'Phone delivery route',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Confirm packages loaded',exact:true})).toHaveCount(0);await expect(page.getByText('Out for delivery',{exact:true}).first()).toBeVisible();});
@@ -148,4 +155,19 @@ test('Manager closes a trip through scoped cash, latest diesel reviews, and gree
  await expect(page.getByText('Closed',{exact:true}).first()).toBeVisible();await page.reload();await expect(page.getByText('Closed',{exact:true}).first()).toBeVisible();
  await page.goto('/cash');await expect(page.locator('.card-grid > .panel')).toHaveCount(0);await page.getByRole('checkbox',{name:'Show confirmed handovers',exact:true}).check();await expect(page.getByRole('heading',{name:'Shift needing review',exact:true})).toBeVisible();
  await page.goto('/fuel');await expect(page.locator('.responsive-table tbody tr')).toHaveCount(0);
+});
+
+test('Driver has no Home, More or Fuel page and still records diesel inside the trip',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await signInFixture(page,'DRIVER',true);await expect(page).toHaveURL(/\/trips$/);
+ for(const path of ['/','/fuel','/settings']){await page.goto(path);await expect(page.getByRole('heading',{name:'My trips',exact:true})).toBeVisible();await expect(page).toHaveURL(/\/trips$/);}
+ await expect(page.getByRole('link',{name:'Home',exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Fuel',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'More navigation'})).toHaveCount(0);
+ await page.getByRole('link').filter({hasText:'Phone delivery route'}).click();await page.getByRole('button',{name:'Record diesel',exact:true}).click();await expect(page.getByRole('dialog',{name:'Record diesel purchase'})).toBeVisible();
+});
+test('Driver collection screen keeps pending and recent decisions, hides decisions older than a week after reload',async({page})=>{
+ await signInFixture(page,'DRIVER',true,false,false,false,false,false,true);await page.goto('/collections');
+ const check=async()=>{await expect(page.locator('.responsive-table tbody tr')).toHaveCount(3);for(const amount of [722.02,733.03,744.04])await expect(page.getByText(new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(amount),{exact:true})).toBeVisible();for(const amount of [711.01,755.05])await expect(page.getByText(new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(amount),{exact:true})).toHaveCount(0);};
+ await check();await page.reload();await check();await page.getByLabel('Collection status').selectOption('Approved');await expect(page.locator('.responsive-table tbody tr')).toHaveCount(1);await page.getByLabel('Collection status').selectOption('Rejected');await expect(page.locator('.responsive-table tbody tr')).toHaveCount(1);
+});
+test('Manager retains approved and rejected collection history for review and reporting',async({page})=>{
+ await signInFixture(page,'MANAGER',false,false,false,false,false,false,true);await page.goto('/collections');await expect(page.locator('.responsive-table tbody tr')).toHaveCount(5);
 });

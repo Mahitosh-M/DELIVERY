@@ -99,3 +99,9 @@ Published approved dispatchBridge update and new cleanupClosedDispatch function 
 - Dispatch: https://delivery-28165--dev-wtgsuuyo.web.app
 - CashApp: https://cashapp-a213f--dev-lwx80c61.web.app
 - CISapp main remains cd0d2bfe8e16d70c35d99d20b32894f15961d035; CashApp main remains 7c764a780dbc7637305d37bd7d2edfcbf56c5eaa. No live Hosting frontend release was replaced.
+
+## 26 October 2026 - simplified driver navigation and collection display history
+
+Driver login and removed Home/Fuel links now open My trips. Driver navigation contains Trips, Collections, Cash and Sales with no More menu; trip diesel capture remains available. The driver collection list hides approved/rejected entries seven full days after their trusted claim decision timestamp, including after reload, while pending records and unknown decision dates remain visible. Manager/Admin history and all accounting data are retained.
+
+Validation: production build passed; 22 focused role, decision-date and sync tests passed; all 23 browser workflows passed. Work remains on dev and the non-live preview pending production approval. No backend deployment or source accounting record deletion is required.

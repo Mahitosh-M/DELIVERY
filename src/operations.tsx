@@ -1,6 +1,7 @@
+import {collectionOnDriverScreen} from './collectionVisibility';
 import {NumberInput} from "./components/ui/number-input";
 import {ResponsiveTable} from "./components/ui/responsive-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, CheckCircle, Wallet, Receipt } from "lucide-react";
 import { useApp } from "./context";
@@ -243,14 +244,24 @@ export function CollectionsPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const [review, setReview] = useState<string | null>(null);
+  const [screenTime, setScreenTime] = useState(Date.now);
+  useEffect(() => {
+    const tick = () => setScreenTime(Date.now());
+    const timer = window.setInterval(tick, 60000);
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', tick);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', tick); document.removeEventListener('visibilitychange', tick); };
+  }, []);
   const rows = visibleCollections(state, user).filter(
     (c) =>
+      (user.role !== "DRIVER" || collectionOnDriverScreen(state, c, screenTime)) &&
       (!tripId || c.tripId === tripId) &&
       (status === "All" || c.status === status) &&
       `${state.customers.find((x) => x.id === c.customerId)?.name} ${c.reference}`
         .toLowerCase()
         .includes(query.toLowerCase()),
   );
+  const selectedReview = rows.find(c => c.id === review);
   return (
     <>
       <div className="page-title">
@@ -322,9 +333,9 @@ export function CollectionsPage() {
           {!rows.length && <Empty />}
         </div>
       </div>
-      {review && (
+      {selectedReview && (
         <CollectionReview
-          value={state.collections.find((c) => c.id === review)!}
+          value={selectedReview}
           onClose={() => setReview(null)}
         />
       )}

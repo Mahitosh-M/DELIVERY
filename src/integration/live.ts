@@ -1,3 +1,4 @@
+import {applyCollectionDecisionDates,type CollectionDecisionClaim} from '../collectionVisibility';
 import {type Command} from '../commands';
 import {uuid,now,type Trip,type Fuel,type Audit,type Collection} from '../domain';
 import {tripEvidenceIds} from '../retention';
@@ -8,7 +9,7 @@ const syncing=new Map<string,Promise<void>>();
 function commandTrip(state:AppState,c:Record<string,any>){return c.tripId??c.value?.tripId??(c.type==='delivery'?state.jobs.find(j=>j.id===c.id)?.tripId:state.trips.some(t=>t.id===c.id)?c.id:null);}
 export async function refreshWorkspace(identity:ConnectedIdentity){
  const currentDb=db,before=JSON.stringify(await currentDb.state.get('main'));
- const result=await bridge<{operational:AppState}>(identity.issuer,'pull');
+ const result=await bridge<{operational:AppState;claims?:CollectionDecisionClaim[]}>(identity.issuer,'pull');
  if(!result.operational)throw new Error('The connected backend did not return a verified workspace');
  if(db!==currentDb)throw new Error('Account changed while synchronising');
  await currentDb.transaction('rw',currentDb.state,currentDb.session,currentDb.pending,currentDb.evidence,async()=>{
@@ -17,6 +18,7 @@ export async function refreshWorkspace(identity:ConnectedIdentity){
   const canReplace=await currentDb.pending.count()===0&&unchanged;
   if(canReplace){
    const previousState=await currentDb.state.get('main');
+   applyCollectionDecisionDates(result.operational,result.claims??[],previousState);
    const expired=new Set(result.operational.trips.filter(t=>!!t.purgedAt).map(t=>t.id));
    const ids=new Set(previousState?tripEvidenceIds(previousState,expired):[]);
    for(const image of await currentDb.evidence.toArray())if(image.tripId&&expired.has(image.tripId))ids.add(image.id);
