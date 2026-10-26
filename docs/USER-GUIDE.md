@@ -106,3 +106,9 @@ Drivers no longer have a Home page, More menu or standalone Fuel page. Opening a
 **My collections** keeps pending submissions visible until a decision. Approved and rejected entries remain visible for seven full days after the actual decision, then leave the driver list and details screen. The display updates when the screen is opened, once a minute while open, and when the app regains focus. Reloading does not restart the seven-day clock. Records with an unknown decision date remain visible until that date is available.
 
 This is a driver-screen rule. Ledger entries, physical cash, receipts, allocations, report totals, Manager/Admin review history and audit records are retained. No CISapp records are deleted.
+
+## Driver shift photos and app artwork
+
+The driver's shop-handover card is compact and centred. Start shift and Submit shift end both show the captured odometer photo with a **Retake photo** action before submission. Retake opens the camera again; cancelling keeps the current photo. After submission, the driver does not see the Shift evidence panel. Manager/Admin evidence review is retained.
+
+The supplied square artwork is used for the app icon, favicon and install icons. The supplied portrait artwork is the startup splash, fitted without cropping. No extra loading text is drawn over it. App name, sign-in and operational workflows remain CIS Dispatch.

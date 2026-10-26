@@ -215,11 +215,13 @@ export function EvidenceInput({
   value,
   onChange,
   signature = false,
+  retake = false,
 }: {
   label: string;
   value: string | null;
   onChange: (id: string | null) => void;
   signature?: boolean;
+  retake?: boolean;
 }) {
   const { user, notify } = useApp();
   const [preview, setPreview] = useState<string | null>(null);
@@ -227,6 +229,7 @@ export function EvidenceInput({
   const [signing, setSigning] = useState(false);
   const [dirty, setDirty] = useState(false);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (value)
       localEvidence.get(value).then((e) => setPreview(e?.dataUrl ?? null));
@@ -268,11 +271,12 @@ export function EvidenceInput({
   return (
     <div className="evidence">
       <span className="field-label">{label}</span>
+      <input ref={camera} className="evidence-camera-input" aria-label={label} type="file" accept="image/*" capture="environment" onChange={e => {const file=e.currentTarget.files?.[0];e.currentTarget.value='';if(file)void upload(file);}} />
       {preview ? (
         <div className="evidence-preview">
           <img src={preview} alt={label} />
-          <button type="button" onClick={() => onChange(null)}>
-            Replace evidence
+          <button type="button" className="secondary" onClick={() => retake ? camera.current?.click() : onChange(null)}>
+            {retake ? "Retake photo" : "Replace evidence"}
           </button>
           <span className="saved">
             <Check size={13} /> Saved locally
@@ -280,20 +284,10 @@ export function EvidenceInput({
         </div>
       ) : (
         <div className="evidence-actions">
-          <label className="upload">
+          <button type="button" className="upload" onClick={() => camera.current?.click()}>
             <Camera size={18} aria-hidden="true" />
             <span>Take photo</span>
-            <input
-              aria-label={label}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void upload(f);
-              }}
-            />
-          </label>
+          </button>
           <label className="upload">
             <Upload size={18} aria-hidden="true" />
             <span>Upload photo</span>

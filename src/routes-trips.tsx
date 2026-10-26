@@ -719,7 +719,7 @@ export function TripDetail() {
           {steps.pendingCollections > 0 && <Link className="link" to={`/collections?tripId=${encodeURIComponent(t.id)}`}>Review this trip’s collections</Link>}
         </section>
       )}
-      <div className="trip-banner">
+      <div className={"trip-banner " + (isDriver ? "driver-handover" : "")}>
         <div>
           <span className="eyebrow">SHOP HANDOVER</span>
           <h2>
@@ -939,7 +939,7 @@ export function TripDetail() {
           })}
         </section>
         <aside>
-          <div className="panel p-5">
+          {!isDriver && <div className="panel p-5">
             <h3>Shift evidence</h3>
             {t.corrections?.map((c) => (
               <p className="notice" key={c.id}>
@@ -961,7 +961,7 @@ export function TripDetail() {
             <p className="muted">
               {t.openingNote} {t.endNote}
             </p>
-          </div>
+          </div>}
           {t.exceptions.length > 0 && (
             <div className="panel p-5 mt-4">
               <h3>Approved exceptions</h3>
@@ -1254,6 +1254,7 @@ function OdometerForm({
           }
           value={photo}
           onChange={setPhoto}
+          retake
         />
         <Field label="Continuity explanation / shift notes">
           <textarea value={note} onChange={(e) => setNote(e.target.value)} />

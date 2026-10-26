@@ -6,3 +6,10 @@ import {SessionGate} from '../src/integration/session';
 afterEach(cleanup);
 it('starts at real login and exposes no workspace or role switcher',async()=>{render(<SessionGate><p>Private operational records</p></SessionGate>);await screen.findByRole('button',{name:'Sign in'});expect(screen.queryByText('Private operational records')).not.toBeInTheDocument();expect(screen.queryByLabelText('Demo profile')).not.toBeInTheDocument();expect(screen.queryByLabelText('Account')).not.toBeInTheDocument();});
 it('failed credentials never open workspace and password is cleared',async()=>{render(<SessionGate><p>Private operational records</p></SessionGate>);await screen.findByRole('button',{name:'Sign in'});fireEvent.change(screen.getByLabelText('Email'),{target:{value:'fictional@example.invalid'}});fireEvent.change(screen.getByLabelText('Password'),{target:{value:'fictional-password'}});fireEvent.click(screen.getByRole('button',{name:'Sign in'}));expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect');expect(screen.getByLabelText('Password')).toHaveValue('');expect(screen.queryByText('Private operational records')).not.toBeInTheDocument();});
+
+it('shows only the supplied splash artwork while checking the initial session',async()=>{
+ let release=()=>{};api.connectionAuth.mockImplementationOnce(()=>new Promise(resolve=>{release=()=>resolve({authStateReady:async()=>{},currentUser:null});}));
+ render(<SessionGate><p>Private operational records</p></SessionGate>);
+ const splash=screen.getByRole('status',{name:'Loading CIS Dispatch'});expect(splash).toHaveTextContent('');expect(screen.getByRole('img',{name:'CIS Dispatch splash'})).toBeInTheDocument();expect(screen.queryByText('Welcome back.')).not.toBeInTheDocument();
+ release();await screen.findByRole('button',{name:'Sign in'});
+});

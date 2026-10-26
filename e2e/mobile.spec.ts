@@ -171,3 +171,30 @@ test('Driver collection screen keeps pending and recent decisions, hides decisio
 test('Manager retains approved and rejected collection history for review and reporting',async({page})=>{
  await signInFixture(page,'MANAGER',false,false,false,false,false,false,true);await page.goto('/collections');await expect(page.locator('.responsive-table tbody tr')).toHaveCount(5);
 });
+
+test('Driver can retake opening and closing photos before submitting and has no submitted shift evidence panel',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await signInFixture(page,'DRIVER');await page.getByRole('link').filter({hasText:'Phone delivery route'}).click();
+ const handover=page.locator('.driver-handover');await expect(handover).toHaveCSS('text-align','center');expect((await handover.boundingBox())!.height).toBeLessThan(190);await page.screenshot({path:'test-results/driver-compact-handover.png'});
+ await expect(page.getByRole('heading',{name:'Shift evidence',exact:true})).toHaveCount(0);
+ const png={name:'odometer.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jV5kAAAAASUVORK5CYII=','base64')};
+ const retake=async(dialog:ReturnType<Page['getByRole']>)=>{
+  await dialog.locator('input[type=file][capture]').setInputFiles(png);await expect(dialog.locator('.evidence-preview img')).toBeVisible();const before=await dialog.locator('.evidence-preview img').getAttribute('src');
+  const choosing=page.waitForEvent('filechooser');await dialog.getByRole('button',{name:'Retake photo',exact:true}).click();const chooser=await choosing;await chooser.setFiles({name:'retaken-odometer.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="navy"/></svg>')});await expect(dialog.locator('.evidence-preview img')).not.toHaveAttribute('src',before!);
+ };
+ await page.getByRole('button',{name:'Start shift',exact:true}).click();let dialog=page.getByRole('dialog',{name:'Start vehicle shift'});await retake(dialog);await dialog.getByRole('button',{name:'Start shift',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByRole('heading',{name:'Shift evidence',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'Confirm packages loaded',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Confirm',exact:true}).click();await page.getByRole('button',{name:'Record outcome',exact:true}).click();dialog=page.getByRole('dialog',{name:'Record delivery outcome'});await dialog.locator('input[type=file][capture]').setInputFiles(png);await expect(dialog.locator('.evidence-preview img')).toBeVisible();await dialog.getByRole('button',{name:'Save delivery outcome',exact:true}).click();await expect(dialog).not.toBeVisible();
+ await page.getByRole('button',{name:'Submit shift end',exact:true}).click();dialog=page.getByRole('dialog',{name:'Submit end-of-shift report'});const closing=dialog.getByRole('spinbutton',{name:'Closing odometer (km)'});await closing.fill(String(Number(await closing.inputValue())+10));await retake(dialog);await dialog.getByRole('button',{name:'Submit shift end',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByText('End submitted',{exact:true}).first()).toBeVisible();await page.reload();await expect(page.getByRole('heading',{name:'Shift evidence',exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Opening odometer photo'})).toHaveCount(0);
+});
+test('Manager retains shift evidence for odometer verification',async({page})=>{await signInFixture(page,'MANAGER');await page.goto('/trips/'+seed().trips[0].id);await expect(page.getByRole('heading',{name:'Shift evidence',exact:true})).toBeVisible();});
+test('Cold startup displays only the supplied splash artwork while application code loads',async({page})=>{
+ let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});await page.route('**/assets/index-*.js',async route=>{await gate;await route.continue();});await page.goto('/',{waitUntil:'commit'});await expect(page.getByRole('img',{name:'CIS Dispatch splash'})).toBeVisible();expect((await page.locator('body').innerText()).trim()).toBe('');release();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+});
+
+test('Saved driver login shows the supplied splash image while reconnecting',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await signInFixture(page,'DRIVER');
+ let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('https://asia-south1-cisapp-236ab.cloudfunctions.net/**',async route=>{if(route.request().postDataJSON().action==='pull')await gate;await route.fallback();});
+ await page.reload({waitUntil:'domcontentloaded'});
+ try{const splash=page.getByRole('img',{name:'CIS Dispatch splash'});await expect(splash).toBeVisible();await expect(splash).toHaveCSS('object-fit','contain');await expect.poll(()=>splash.evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth>0)).toBe(true);await page.screenshot({path:'test-results/supplied-splash-mobile.png'});await page.setViewportSize({width:1280,height:900});await page.screenshot({path:'test-results/supplied-splash-desktop.png'});}finally{release();}
+ await expect(page.getByRole('heading',{name:'My trips',exact:true})).toBeVisible();
+});

@@ -105,3 +105,9 @@ Published approved dispatchBridge update and new cleanupClosedDispatch function 
 Driver login and removed Home/Fuel links now open My trips. Driver navigation contains Trips, Collections, Cash and Sales with no More menu; trip diesel capture remains available. The driver collection list hides approved/rejected entries seven full days after their trusted claim decision timestamp, including after reload, while pending records and unknown decision dates remain visible. Manager/Admin history and all accounting data are retained.
 
 Validation: production build passed; 22 focused role, decision-date and sync tests passed; all 23 browser workflows passed. Work remains on dev and the non-live preview pending production approval. No backend deployment or source accounting record deletion is required.
+
+## 26 October 2026 - driver handover, photo retakes and supplied artwork
+
+Driver handover is compact/centred; shift evidence is hidden from driver screens after submission and remains available to Manager/Admin. Browser workflow verified retaking both opening and closing photos, submitting the replacement photos, completing delivery, ending the shift and reloading without exposing submitted shift evidence. The three session unit tests passed, including artwork-only loading. Startup and saved-login browser checks passed with the supplied portrait splash on phone and desktop. App-icon PNG sizes are derived from the supplied square artwork; both full original images are preserved in public assets.
+
+Production build passed. Changes are on dev and the non-live review preview; main/live release still requires approval.
