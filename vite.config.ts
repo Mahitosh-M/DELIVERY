@@ -18,13 +18,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["app-icon.png", "splash-screen.png"],
+      includeAssets: ["app-icon.png", "apple-touch-icon.png", "splash-screen.png", "splash-landscape.png"],
       manifest: {
         name: "CIS Dispatch",
         short_name: "Dispatch",
         description: "Connected delivery operations",
         theme_color: "#11185a",
-        background_color: "#f9fbff",
+        background_color: "#0059fa",
         display: "standalone",
         start_url: "/",
         icons: [
@@ -39,6 +39,12 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
+          },
+          {
+            src: "/icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },

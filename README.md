@@ -73,3 +73,5 @@ See [CIS Dispatch: simple steps](docs/USER-GUIDE.md) for the complete three-box 
 
 
 Trip closing and CashApp diesel guide: [step-by-step workflow](docs/phase2/TRIP-CLOSING-FUEL.md).
+
+App icon, responsive splash, packaging and launcher-cache guidance: [app artwork](docs/APP-ARTWORK.md).

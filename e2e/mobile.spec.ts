@@ -187,14 +187,34 @@ test('Driver can retake opening and closing photos before submitting and has no 
 });
 test('Manager retains shift evidence for odometer verification',async({page})=>{await signInFixture(page,'MANAGER');await page.goto('/trips/'+seed().trips[0].id);await expect(page.getByRole('heading',{name:'Shift evidence',exact:true})).toBeVisible();});
 test('Cold startup displays only the supplied splash artwork while application code loads',async({page})=>{
- let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});await page.route('**/assets/index-*.js',async route=>{await gate;await route.continue();});await page.goto('/',{waitUntil:'commit'});await expect(page.getByRole('img',{name:'CIS Dispatch splash'})).toBeVisible();expect((await page.locator('body').innerText()).trim()).toBe('');release();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+ let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});await page.route('**/assets/index-*.js',async route=>{await gate;await route.continue();});await page.goto('/',{waitUntil:'commit'});
+ try{for(const size of [{width:390,height:844},{width:1280,height:900}]){await page.setViewportSize(size);await expectSplashCoverage(page,size);}expect((await page.locator('body').innerText()).trim()).toBe('');}finally{release();}
+ await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
 });
 
-test('Saved driver login shows the supplied splash image while reconnecting',async({page})=>{
+async function expectSplashCoverage(page:Page,size:{width:number;height:number}){
+ const splash=page.getByRole('img',{name:'CIS Dispatch splash'});await expect(splash).toBeVisible();await expect(splash).toHaveCSS('object-fit','cover');
+ await expect.poll(()=>splash.evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth>0)).toBe(true);
+ await expect.poll(()=>splash.evaluate((image:HTMLImageElement)=>new URL(image.currentSrc).pathname)).toBe(size.width/size.height>=4/3?'/splash-landscape.png':'/splash-screen.png');
+ const bounds=await splash.boundingBox();expect(bounds).not.toBeNull();expect(bounds!.x).toBe(0);expect(bounds!.y).toBe(0);expect(bounds!.width).toBe(size.width);expect(bounds!.height).toBe(size.height);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+}
+
+test('Saved driver login fills phone, tablet and desktop screens with splash artwork while reconnecting',async({page})=>{
  await page.setViewportSize({width:390,height:844});await signInFixture(page,'DRIVER');
  let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});
  await page.route('https://asia-south1-cisapp-236ab.cloudfunctions.net/**',async route=>{if(route.request().postDataJSON().action==='pull')await gate;await route.fallback();});
  await page.reload({waitUntil:'domcontentloaded'});
- try{const splash=page.getByRole('img',{name:'CIS Dispatch splash'});await expect(splash).toBeVisible();await expect(splash).toHaveCSS('object-fit','contain');await expect.poll(()=>splash.evaluate((image:HTMLImageElement)=>image.complete&&image.naturalWidth>0)).toBe(true);await page.screenshot({path:'test-results/supplied-splash-mobile.png'});await page.setViewportSize({width:1280,height:900});await page.screenshot({path:'test-results/supplied-splash-desktop.png'});}finally{release();}
+ try{for(const size of [{width:320,height:568},{width:390,height:844},{width:430,height:932},{width:768,height:1024},{width:1024,height:768},{width:844,height:390},{width:1280,height:900}]){await page.setViewportSize(size);await expectSplashCoverage(page,size);await page.screenshot({path:`test-results/splash-${size.width}x${size.height}.png`});}}finally{release();}
  await expect(page.getByRole('heading',{name:'My trips',exact:true})).toBeVisible();
+});
+
+test('Launcher icons have opaque artwork at every edge, including Android maskable and Apple icons',async({page})=>{
+ await page.goto('/');
+ const manifest=await (await page.request.get('/manifest.webmanifest')).json();
+ expect(manifest.background_color).toBe('#0059fa');expect(manifest.icons).toContainEqual(expect.objectContaining({src:'/icon-maskable-512.png',purpose:'maskable'}));
+ for(const [src,size] of [['/icon-192.png',192],['/icon-512.png',512],['/apple-touch-icon.png',180],['/icon-maskable-512.png',512]] as const){
+  const result=await page.evaluate(async({src})=>{const image=new Image();image.src=src;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const context=canvas.getContext('2d')!;context.drawImage(image,0,0);let white=0,transparent=0;const last=canvas.width-1;for(let i=0;i<=last;i++)for(const [x,y] of [[i,0],[i,last],[0,i],[last,i]]){const [r,g,b,a]=context.getImageData(x,y,1,1).data;if(a!==255)transparent++;if(r>235&&g>235&&b>235)white++;}return{width:canvas.width,height:canvas.height,white,transparent};},{src});
+  expect(result,src).toEqual({width:size,height:size,white:0,transparent:0});
+ }
 });
