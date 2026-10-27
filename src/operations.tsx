@@ -3,7 +3,7 @@ import {NumberInput} from "./components/ui/number-input";
 import {ResponsiveTable} from "./components/ui/responsive-table";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, CheckCircle, Wallet, Receipt } from "lucide-react";
+import { Plus, CheckCircle, Wallet, Receipt, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useApp } from "./context";
 import {
   Badge,
@@ -879,7 +879,7 @@ export function CashPage() {
     <>
       <div className="page-title">
         <div>
-          <h1>Cash reconciliation</h1>
+          <h1>{user.role === "DRIVER" ? "Cash with driver" : "Cash reconciliation"}</h1>
           <p>
             Physical custody and handover. Separate from customer collections.
           </p>
@@ -899,8 +899,8 @@ export function CashPage() {
         {rows.map((t) => {
           const c = cashSummary(state, t);
           return (
-            <div className="panel p-5" key={t.id}>
-              <div className="flex-between">
+            <div className="panel p-5 cash-record" key={t.id}>
+              <div className="flex-between cash-record-heading">
                 <h3>{t.name}</h3>
                 <Badge>
                   {t.handoverConfirmed ? "Handover confirmed" : t.status}
@@ -910,28 +910,31 @@ export function CashPage() {
                 {t.date} · Custodian:{" "}
                 {state.users.find((u) => u.id === t.primaryDriverId)?.name}
               </small>
+              <div className="cash-record-balance">
+                <Wallet size={24} aria-hidden="true" />
+                <div>
+                  <span>Cash with driver</span>
+                  <strong className={c.held < 0 ? "cash-outflow" : "cash-inflow"}>{money(c.held)}</strong>
+                </div>
+              </div>
               <div className="summary-box">
                 <p>
-                  Opening advance<span>{money(c.advance)}</span>
+                  <span>Opening advance</span><strong>{money(c.advance)}</strong>
                 </p>
-                <p>
-                  Cash collections reported<span>{money(c.reported)}</span>
+                <p className="cash-inflow">
+                  <span className="cash-record-label"><ArrowDownLeft size={16} aria-hidden="true" />Cash collections reported</span><strong>{money(c.reported)}</strong>
                 </p>
-                <p>
-                  Cash spending reported<span>- {money(c.spent)}</span>
+                <p className="cash-outflow">
+                  <span className="cash-record-label"><ArrowUpRight size={16} aria-hidden="true" />Cash expenses reported</span><strong>{money(c.spent > 0 ? -c.spent : 0)}</strong>
                 </p>
                 <p className="total">
-                  Expected handover<span>{money(c.expected)}</span>
+                  <span>Expected handover</span><strong>{money(c.expected)}</strong>
                 </p>
                 <p>
-                  Physically received<span>{money(c.received)}</span>
+                  <span>Physically received</span><strong>{money(c.received)}</strong>
                 </p>
-                <p>
-                  Approved cash collections<span>{money(c.approvedCash)}</span>
-                </p>
-                <p>
-                  Reported cash remaining with driver
-                  <span>{money(c.held)}</span>
+                <p className="cash-inflow">
+                  <span>Approved cash collections</span><strong>{money(c.approvedCash)}</strong>
                 </p>
                 {(c.rejectedCash > 0 || c.rejectedSpending > 0) && (
                   <p className="notice">
@@ -942,7 +945,7 @@ export function CashPage() {
                 )}
                 {t.handoverConfirmed && (
                   <p>
-                    Shortage / excess<span>{money(c.difference)}</span>
+                    <span>Shortage / excess</span><strong>{money(c.difference)}</strong>
                   </p>
                 )}
               </div>

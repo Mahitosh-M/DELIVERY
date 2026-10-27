@@ -53,6 +53,56 @@
 .driver-handover>div{min-width:0;width:100%;}.driver-handover .eyebrow{font-size:10px;}.driver-handover h2{font-size:21px;line-height:1.3;margin:5px 0;}.driver-handover p{font-size:12px;line-height:1.4;margin:4px 0;overflow-wrap:anywhere;}.driver-handover .trip-stat{justify-content:center;gap:8px;}.driver-handover .trip-stat>strong{font-size:24px;line-height:1.2;}.driver-handover .trip-stat>p{font-size:11px;}
 .evidence-camera-input{display:none;}
 .evidence-preview>.secondary{margin:12px 0 4px;min-height:44px;}
+
+/* Cash records use a light ledger surface with explicit incoming/outgoing labels. */
+.panel.cash-record{background:#fff7e6;color:#332b1f;border-color:#e4d3ad;}
+.cash-record-heading{align-items:flex-start;flex-wrap:wrap;gap:8px;}
+.cash-record-heading h3{margin:0;color:#332b1f;font-weight:800;overflow-wrap:anywhere;}
+.cash-record>small{display:block;margin-top:8px;color:#6c5b40;line-height:1.5;}
+.cash-record-balance{display:flex;align-items:center;gap:12px;margin-top:18px;padding:16px;background:#fffdf5;border:1px solid #e4d3ad;border-radius:14px;}
+.cash-record-balance>svg{flex-shrink:0;color:#166534;}
+.cash-record-balance>div{min-width:0;}
+.cash-record-balance span{display:block;font-size:12px;font-weight:700;color:#6c5b40;}
+.cash-record-balance strong{display:block;margin-top:4px;font-size:clamp(24px,6vw,30px);line-height:1.25;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.cash-record .summary-box{background:#fffdf5;color:#332b1f;border-color:#e4d3ad;padding:12px;margin:12px 0 16px;}
+.cash-record .summary-box p{align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;}
+.cash-record .summary-box p>span{text-align:left;font-weight:500;min-width:0;}
+.cash-record .summary-box strong{flex-shrink:0;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;}
+.cash-record .summary-box .total{border-color:#e4d3ad;font-weight:800;}
+.cash-record .summary-box .total>span{font-weight:800;}
+.cash-record .cash-inflow,.cash-record .cash-inflow>span,.cash-record .cash-outflow,.cash-record .cash-outflow>span{font-weight:800;}
+.cash-record .summary-box p.cash-inflow>span,.cash-record .summary-box p.cash-outflow>span{font-weight:800;}
+.cash-record .cash-inflow{color:#166534;}
+.cash-record .cash-outflow{color:#b42318;}
+.cash-record-label{display:flex;align-items:flex-start;gap:6px;}
+.cash-record-label svg{flex-shrink:0;margin-top:1px;}
+.cash-record .notice{background:#fff0c9;border-color:#d8b96e;color:#6b4513;}
+.cash-record .actions{flex-wrap:wrap;}
+.cash-record .secondary{background:#fffdf5;border-color:#c9b788;color:#332b1f;}
+.cash-record .secondary:hover{background:#f4e6c4;}
+.cash-record .link{color:#11185a;font-weight:700;}
+.cash-record :is(button,a):focus-visible{outline-color:#11185a;}
+@media(max-width:360px){.cash-record .summary-box p{flex-wrap:wrap;gap:4px;}.cash-record .summary-box p>strong{margin-left:auto;max-width:100%;overflow-wrap:anywhere;}}
+
+/* Keep tile titles and summary figures consistently centred across all profiles. */
+:is(.action-tile strong,.metric small,.metric-card h3,.settings-tiles>button,.driver-action-grid>button,.panel-heading h3,.panel>h3,.route-card h3,.master-card h3,.stop-card h3,.detail-card h3,.closing-step h4,.trip-banner .eyebrow,.trip-banner h2,.weekly-day-grid .summary-box>strong,.cash-record-heading h3,.cash-record-balance span){text-transform:uppercase;text-align:center;letter-spacing:.04em;}
+.metric,.metric-card{text-align:center;}
+.metric{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.metric>small,.metric>strong,.metric>p{width:100%;text-align:center;}
+.metric small{font-weight:800;max-width:100%;}
+.metric>.flex-between{width:100%;flex-direction:column-reverse;justify-content:center;align-items:center;gap:10px;}
+.panel-heading{flex-direction:column;justify-content:center;text-align:center;gap:8px;}
+.panel-heading h3,.panel>h3,.route-card h3,.master-card h3,.detail-card h3{width:100%;}
+.closing-step{text-align:center;}
+.weekly-day-grid .summary-box{align-items:center;text-align:center;}
+.trip-banner,.trip-banner .trip-stat{text-align:center;justify-content:center;}
+.trip-banner{justify-items:center;}
+.trip-banner .trip-stat{flex-direction:column;gap:6px;}
+.stop-card .grow>.flex-between{flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+.cash-record-heading{flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.cash-record>small{text-align:center;}
+.cash-record-balance{justify-content:center;flex-direction:column;text-align:center;}
+
 /* Match the critical first-paint styles in index.html. Artwork covers the viewport. */
 .app-splash{position:fixed;inset:0;z-index:1000;overflow:hidden;background:#0059fa;}
 .app-splash picture,.app-splash img{display:block;width:100%;height:100%;}
