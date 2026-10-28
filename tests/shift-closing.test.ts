@@ -14,12 +14,12 @@ function fixture(advance=0) {
 }
 describe('guided shift closing and fuel funding',()=>{
  it('calculates fuel in paise with final rounding and rejects unsupported precision',()=>{
-  expect(fuelBill('10.25',9599)).toBe(98390);
+  expect(fuelBill('10.25',9599)).toBe(98400);
   expect(fuelBill('20',10000)).toBe(200000);
   expect(()=>fuelBill('1.001',10000)).toThrow();
  });
  it('rejects a hand-edited bill even one paise away from the calculated amount',()=>{
-  const {f,run}=fixture(50000);expect(()=>run('DRIVER',{type:'submitFuel',value:{...f,amount:50001}})).toThrow(/match bill/);
+  const {f,run}=fixture(50000);expect(()=>run('DRIVER',{type:'submitFuel',value:{...f,amount:50001}})).toThrow(/match bill|whole rupee/);
  });
  it('uses personal funds without an advance, even with an outdated driver form',()=>{
   const {s,t,f,run}=fixture();run('DRIVER',{type:'submitFuel',value:{...f,cashExpenseId:'spoofed-posting'}});
@@ -67,4 +67,9 @@ describe('guided shift closing and fuel funding',()=>{
   run('MANAGER',{type:'closeTrip',id:t.id,note:'Verified odometer'});
   expect(t.status).toBe('Closed');
  });
+});
+
+describe('amount-only diesel',()=>{
+ it('stores the entered amount and required receipt with unknown calculation inputs',()=>{const {s,f,run}=fixture();run('DRIVER',{type:'submitFuel',value:{...f,litres:null,rate:null,amount:98400,odometer:null,fullTank:false}});expect(s.fuels[0]).toMatchObject({amount:98400,litres:null,rate:null,entryMode:'bill_amount',source:'Personal'});});
+ it('rejects a fractional manual bill',()=>{const {f,run}=fixture();expect(()=>run('DRIVER',{type:'submitFuel',value:{...f,litres:null,rate:null,amount:98420}})).toThrow(/whole rupee/);});
 });

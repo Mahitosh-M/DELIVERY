@@ -1,3 +1,4 @@
+import {wholePaise} from './domain';
 import {collectionOnDriverScreen} from './collectionVisibility';
 import {NumberInput} from "./components/ui/number-input";
 import {ResponsiveTable} from "./components/ui/responsive-table";
@@ -20,8 +21,6 @@ import {
   now,
   businessDate,
   money,
-  paise,
-  fuelBill,
   timestamp,
   type Trip,
   type Collection,
@@ -66,7 +65,7 @@ export function CollectionForm({
     preview = allocateOldest(
       state,
       customerId,
-      mode === "Credit" ? 0 : paise(amount || "0"),
+      mode === "Credit" ? 0 : wholePaise(amount || "0"),
       ids,
     );
   } catch {}
@@ -85,7 +84,7 @@ export function CollectionForm({
               shopId,
               driverId: user.id,
               invoiceIds: ids,
-              amount: mode === "Credit" ? 0 : paise(amount),
+              amount: mode === "Credit" ? 0 : wholePaise(amount),
               mode,
               reference,
               note,
@@ -160,8 +159,8 @@ export function CollectionForm({
               <NumberInput
                 required
                 type="number"
-                step="0.01"
-                min="0.01"
+                step="1"
+                min="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
@@ -397,10 +396,10 @@ function CollectionReview({
             const actual =
               approve && c.mode !== "Credit"
                 ? Object.entries(amounts)
-                    .filter(([, amount]) => amount !== "" && paise(amount) > 0)
+                    .filter(([, amount]) => amount !== "" && wholePaise(amount) > 0)
                     .map(([invoiceId, amount]) => ({
                       invoiceId,
-                      amount: paise(amount),
+                      amount: wholePaise(amount),
                     }))
                 : [];
             await act({
@@ -458,7 +457,7 @@ function CollectionReview({
                       aria-label={`Allocate ${i.number}`}
                       type="number"
                       min="0"
-                      step="0.01"
+                      step="1"
                       value={amounts[i.id] ?? ""}
                       onChange={(e) =>
                         setAmounts({ ...amounts, [i.id]: e.target.value })
@@ -525,21 +524,12 @@ export function FuelForm({
 }) {
   const { state, user, act } = useApp();
   const [id] = useState(existing?.id ?? uuid());
-  const [litres, setLitres] = useState(existing ? String(existing.litres) : "");
-  const [rate, setRate] = useState(existing ? String(existing.rate / 100) : "");
+  const [billAmount, setBillAmount] = useState(existing ? String(existing.amount / 100) : "");
   const remainingAdvance = advanceRemaining(state, trip, existing?.id);
-  let bill = 0;
-  try { if (litres && rate) bill = fuelBill(litres, paise(rate)); } catch { /* Incomplete input. */ }
-  const [pump, setPump] = useState(existing?.pump ?? "");
   const [date, setDate] = useState(
     new Date(Date.parse(existing?.at ?? now()) + 330 * 60000)
       .toISOString()
       .slice(0, 16),
-  );
-  const [odometer, setOdometer] = useState(
-    existing?.odometer !== null && existing?.odometer !== undefined
-      ? String(existing.odometer)
-      : "",
   );
   const [receipt, setReceipt] = useState<string | null>(
     existing?.receiptId ?? null,
@@ -547,7 +537,6 @@ export function FuelForm({
   const [source, setSource] = useState<Fuel["source"]>(
     existing ? fuelSource(state, existing) : remainingAdvance > 0 ? "Shop advance" : "Personal",
   );
-  const [full, setFull] = useState(existing?.fullTank ?? false);
   return (
     <Modal title="Record diesel purchase" onClose={onClose}>
       <Form
@@ -562,11 +551,12 @@ export function FuelForm({
               driverId: user.id,
               shopId: trip.startShopId,
               at: new Date(date + "+05:30").toISOString(),
-              litres: Number(litres),
-              rate: paise(rate),
-              amount: fuelBill(litres, paise(rate)),
-              pump,
-              odometer: odometer === "" ? null : Number(odometer),
+              litres: null,
+              rate: null,
+              entryMode: "bill_amount",
+              amount: wholePaise(billAmount),
+              pump: "",
+              odometer: null,
               receiptId: receipt ?? "",
               source,
               status: "Submitted",
@@ -574,7 +564,7 @@ export function FuelForm({
                 source === "Personal" ? "Pending" : "Not applicable",
               reviewNote: "",
               settledAt: null,
-              fullTank: full,
+              fullTank: false,
             },
           });
           onClose();
@@ -589,48 +579,8 @@ export function FuelForm({
               onChange={(e) => setDate(e.target.value)}
             />
           </Field>
-          <Field label="Litres purchased">
-            <NumberInput
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
-              value={litres}
-              onChange={(e) => setLitres(e.target.value)}
-            />
-          </Field>
-          <Field label="Price per litre (₹)">
-            <NumberInput
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-            />
-          </Field>
           <Field label="Total bill (₹)">
-            <NumberInput
-              type="number"
-              min="0.01"
-              step="0.01"
-              required
-              value={bill ? (bill / 100).toFixed(2) : ""}
-              readOnly
-              aria-describedby="fuel-total-help"
-            />
-          </Field>
-          <Field label="Pump name (optional)">
-            <input value={pump} onChange={(e) => setPump(e.target.value)} />
-          </Field>
-          <Field label="Odometer at fill (optional)">
-            <NumberInput
-              type="number"
-              min={trip.opening ?? 0}
-              step="1"
-              value={odometer}
-              onChange={(e) => setOdometer(e.target.value)}
-            />
+            <NumberInput type="number" min="1" step="1" required value={billAmount} onChange={e=>setBillAmount(e.target.value)} aria-describedby="fuel-total-help" />
           </Field>
           <Field label="Payment source">
             <select
@@ -641,16 +591,8 @@ export function FuelForm({
               <option>Personal</option>
             </select>
           </Field>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={full}
-              onChange={(e) => setFull(e.target.checked)}
-            />
-            Verified full-tank fill
-          </label>
         </div>
-        <p className="muted" id="fuel-total-help">Total bill is calculated from litres × price per litre.</p>
+        <p className="muted" id="fuel-total-help">Enter the amount paid in whole rupees. Attach the fuel bill so the Manager can cross-check its rate and quantity.</p>
         {remainingAdvance <= 0 && <p className="notice">No shop advance remains. Use personal funds; reimbursement is reviewed separately.</p>}
         <EvidenceInput
           label="Diesel receipt photograph"
@@ -691,7 +633,7 @@ export function FuelPage() {
               : "Fuel & reimbursements"}
           </h1>
           <p>
-            Purchased litres, approved expense and separate reimbursement
+            Fuel bills, approved expense and separate reimbursement
             settlement.
           </p>
         </div>
@@ -744,7 +686,7 @@ export function FuelPage() {
                     </strong>
                     <small>{timestamp(f.at)}</small>
                   </td>
-                  <td>{f.litres.toFixed(2)} L</td>
+                  <td>{f.litres === null ? "See bill" : `${f.litres.toFixed(2)} L`}</td>
                   <td>{money(f.amount)}</td>
                   <td>{f.source}</td>
                   <td>
@@ -804,7 +746,7 @@ function FuelReview({ fuel: f, onClose, onDecision }: { fuel: Fuel; onClose: () 
       <div className="detail-card">
         <h3>{f.pump || "Diesel purchase"}</h3>
         <p>
-          {f.litres} L × {money(f.rate)} = {money(f.amount)}
+          {f.litres !== null && f.rate !== null ? `${f.litres} L × ${money(f.rate)} = ` : "Bill amount: "}{money(f.amount)}
         </p>
         <p>
           {source} · {f.status} · {f.reimbursement}
@@ -988,7 +930,7 @@ export function CashPage() {
               await act({
                 type: "handover",
                 id: trip.id,
-                amount: paise(amount),
+                amount: wholePaise(amount),
                 note,
               });
               setSelected(null);
@@ -1004,7 +946,7 @@ export function CashPage() {
                 required
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />

@@ -506,9 +506,9 @@ export function ReportsPage() {
         <Metric
           label="Approved fuel cost"
           value={money(r.cost)}
-          detail={`${r.fuels
+          detail={r.fuels.some(x => x.status === "Approved" && x.litres === null) ? "Rate and quantity: see approved fuel bills" : `${r.fuels
             .filter((x) => x.status === "Approved")
-            .reduce((n, x) => n + x.litres, 0)
+            .reduce((n, x) => n + (x.litres ?? 0), 0)
             .toFixed(2)} litres purchased`}
           icon={<Fuel size={20} />}
         />

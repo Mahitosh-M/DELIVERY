@@ -1,3 +1,4 @@
+import {wholePaise} from './domain';
 import {useSession} from './integration/session';
 import {bridge} from './integration/connection';
 import {routeDays,nextRouteDate,type WeeklyRoute} from './weekly-routes';
@@ -288,7 +289,7 @@ function RouteEditor({
         onSubmit={async () => {
           await act({
             type: "saveTrip",
-            value: { ...t, openingAdvance: paise(advance) },
+            value: { ...t, openingAdvance: wholePaise(advance) },
           });
           onClose();
         }}
@@ -399,7 +400,7 @@ function RouteEditor({
             <NumberInput
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               required
               value={advance}
               onChange={(e) => setAdvance(e.target.value)}

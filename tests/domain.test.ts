@@ -620,7 +620,7 @@ describe("Fuel and cash integrity", () => {
     prepared();
     expect(() =>
       run(driver, { type: "submitFuel", value: fuel({ amount: 99999 }) }),
-    ).toThrow(/match bill/);
+    ).toThrow(/match bill|whole rupee/);
   });
   it("requires a persisted receipt", () => {
     prepared();
