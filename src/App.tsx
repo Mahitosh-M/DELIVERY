@@ -1,4 +1,7 @@
 import {PullToSync} from './integration/PullToSync';
+import {DriverNavigation} from './driver-navigation';
+import {RouteSchedule} from './route-schedule';
+import {RouteProfitability} from './route-profitability';
 import {SessionGate,useSession} from "./integration/session";
 import React, { useState } from "react";
 import {
@@ -36,6 +39,8 @@ import { CollectionsPage, FuelPage, CashPage, SalesPage } from "./operations";
 import { SettingsPage, AuditPage } from "./settings";
 import { ConnectionPage } from "./integration/ConnectionPage";
 const navigation = [
+  {path:'/route-profitability',label:'Route profitability',icon:BarChart3,roles:['ADMIN','MANAGER']},
+  {path:'/route-management',label:'Route Management',icon:RouteIcon,roles:['ADMIN']},
   {
     path: "/connection",
     label: "CISapp connection",
@@ -202,7 +207,7 @@ function Shell() {
             </div>
           </div>
         </header>
-        <div className="workspace-status"><span>Dev preview - real data</span><NavLink to="/connection">{navigator.onLine ? "Connection" : "Offline - saved on device"}</NavLink></div>
+        <div className="workspace-status"><span>{import.meta.env.DEV ? 'Dev preview - real data' : 'Connected workspace'}</span><NavLink to="/connection">{navigator.onLine ? "Connection" : "Offline - saved on device"}</NavLink></div>
         <main>
           {!allowed ? (
             <Navigate to={startPage} replace />
@@ -213,6 +218,9 @@ function Shell() {
               <Route path="/routes" element={<RoutesPage />} />
               <Route path="/trips" element={<TripsPage />} />
               <Route path="/trips/:id" element={<TripDetail />} />
+              <Route path="/trips/:id/navigation" element={<DriverNavigation />} />
+              <Route path="/route-management" element={<RouteSchedule />} />
+              <Route path="/route-profitability" element={<RouteProfitability />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/connection" element={<ConnectionPage />} />

@@ -1,9 +1,22 @@
+vi.mock('../../.release/cisapp/src/components/RouteMap',()=>({RouteMap:()=>null}));
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
 const request=vi.hoisted(()=>vi.fn());
-vi.mock('../../../CISapp/src/services/dispatchService',()=>({dispatchRequest:request}));
-import DeliveryDialog from '../../../CISapp/src/components/DeliveryDialog';
+vi.mock('../../.release/cisapp/src/services/dispatchService',()=>({dispatchRequest:request}));
+import DeliveryDialog from '../../.release/cisapp/src/components/DeliveryDialog';
 afterEach(()=>{cleanup();vi.resetAllMocks();});
+it('Staff override stays invoice-specific and a late master lookup cannot replace the edited pin',async()=>{
+ let resolvePin:(value:unknown)=>void=()=>{};const saved=vi.fn();
+ request.mockImplementation((action:string)=>action==='routeCatalog'?Promise.resolve({routes:[]}):action==='invoiceDeliveryLocation'?new Promise(resolve=>{resolvePin=resolve;}):Promise.resolve({saved:true}));
+ render(<DeliveryDialog invoice={{id:'pin-invoice',shopId:'SHOP_A',invoiceNumber:'A-2',customerName:'Fictional'}} onClose={()=>{}} onSaved={saved}/>);
+ await waitFor(()=>expect(request).toHaveBeenCalledWith('invoiceDeliveryLocation',{invoiceId:'pin-invoice'}));
+ fireEvent.change(screen.getByLabelText('Latitude'),{target:{value:'15.96'}});fireEvent.change(screen.getByLabelText('Longitude'),{target:{value:'76.65'}});fireEvent.click(screen.getByLabelText('I confirmed this delivery location'));
+ resolvePin({customerId:'customer-1',location:{lat:16,lng:77,confirmed:true}});await waitFor(()=>expect(screen.getByLabelText('Latitude')).toHaveValue('15.96'));
+ expect(screen.queryByRole('button',{name:/Save confirmed pin to customer profile/})).toBeNull();
+ fireEvent.change(screen.getByLabelText('Verified delivery address'),{target:{value:'Entrance road'}});fireEvent.change(screen.getByLabelText('Delivery contact'),{target:{value:'0000000000'}});fireEvent.submit(screen.getByRole('button',{name:'Save delivery request'}).closest('form')!);
+ await waitFor(()=>expect(request).toHaveBeenCalledWith('markDelivery',expect.objectContaining({invoiceId:'pin-invoice',location:expect.objectContaining({lat:15.96,lng:76.65,confirmed:true})})));
+ expect(request.mock.calls.some(c=>c[0]==='saveCustomerDeliveryLocation')).toBe(false);
+});
 it('CISapp staff see current route days and submit the selected route and stop',async()=>{
  const route={id:'r1',name:'Route 1',from:'A',to:'B',shopIds:['SHOP_A'],days:[1,3],stops:[{id:'s1',name:'Middle road'}],active:true,revision:2};
  request.mockImplementation(async(action:string)=>action==='routeCatalog'?{routes:[route]}:{saved:true});

@@ -75,3 +75,5 @@ See [CIS Dispatch: simple steps](docs/USER-GUIDE.md) for the complete three-box 
 Trip closing and CashApp diesel guide: [step-by-step workflow](docs/phase2/TRIP-CLOSING-FUEL.md).
 
 App icon, responsive splash, packaging and launcher-cache guidance: [app artwork](docs/APP-ARTWORK.md).
+
+Weekly routes, CISapp delivery pins, driver map/reminders and protected route profitability: [development implementation and review guide](docs/SMART-ROUTES.md). This extension is on `dev-smart-routes`; new backend actions are not deployed. Paid Google services and native turn-by-turn remain disabled.
