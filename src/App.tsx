@@ -207,7 +207,7 @@ function Shell() {
             </div>
           </div>
         </header>
-        <div className="workspace-status"><span>Dev preview - real data</span><NavLink to="/connection">{navigator.onLine ? "Connection" : "Offline - saved on device"}</NavLink></div>
+        <div className="workspace-status"><span>{import.meta.env.DEV ? 'Dev preview - real data' : 'Connected workspace'}</span><NavLink to="/connection">{navigator.onLine ? "Connection" : "Offline - saved on device"}</NavLink></div>
         <main>
           {!allowed ? (
             <Navigate to={startPage} replace />
