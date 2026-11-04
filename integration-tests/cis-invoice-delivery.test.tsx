@@ -1,4 +1,5 @@
 vi.mock('../../.release/cisapp/src/components/RouteMap',()=>({RouteMap:()=>null}));
+vi.mock('../../.release/cisapp/src/services/medicalRewardService',()=>({quoteMedicalReward:async()=>({maximumAllowedCoins:160,levelRewardCoins:40,finalCombinedRewardCoins:100,valid:true,message:'',locked:false})}));
 import {it,expect,vi,afterEach} from 'vitest';
 import {render,screen,fireEvent,cleanup} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
