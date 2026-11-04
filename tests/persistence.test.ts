@@ -1,4 +1,5 @@
 import { seed } from "./fixtures/seed";
+import {buildTripRoute,reminderCandidate} from '../src/smart-routing';
 import { beforeEach, afterEach, describe, it, expect } from "vitest";
 import {
   DispatchDatabase,
@@ -23,6 +24,12 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await db.delete();
+});
+it('preserves saved itineraries and reminder deduplication through reopen and backup recovery',async()=>{
+ const state=await repository.get(),t=state.trips[0];t.status='Active';t.stops[0].completed=false;t.routeSnapshot=buildTripRoute(state,t,null,new Date().toISOString());state.arrivalReminders=[reminderCandidate(t,[],5,'Manual',new Date().toISOString(),'driver-1')!];await db.state.put(state);
+ const backup=await exportBackup();db.close();await db.open();expect((await repository.get()).trips[0].routeSnapshot).toEqual(t.routeSnapshot);
+ await importBackup('admin',backup);const restored=await repository.get();expect(reminderCandidate(restored.trips[0],restored.arrivalReminders!,4,'Manual',new Date().toISOString(),'driver-1')).toBeNull();
+ const corrupt=JSON.parse(backup);corrupt.state.trips[0].routeSnapshot.points[0].lat=200;expect(()=>validateBackup(corrupt)).toThrow(/route location/);
 });
 it("retains operational data and image evidence after database reopen", async () => {
   const evidence = await localEvidence.save("driver-1", "proof.png", pixel);

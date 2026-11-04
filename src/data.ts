@@ -12,6 +12,7 @@ import { uuid, now } from "./domain";
 import { emptyState } from "./emptyState";
 import { applyCommand, type Command } from "./commands";
 import { assert, audit } from "./rules";
+import {validPoint} from './route-geo';
 export interface DispatchRepository {
   get(): Promise<AppState>;
   execute(actorId: string, command: Command): Promise<void>;
@@ -54,6 +55,7 @@ export class DispatchDatabase extends Dexie {
   session!: Table<{id:string;identity:unknown;validatedAt:string;lastSyncedAt?:string},string>;
   constructor(name = "cis-dispatch") {
     super(name);
+    this.version(4).stores({state:'id',evidence:'id,actorId,at',pending:'id,capturedAt',session:'id'}).upgrade(async tx=>{await tx.table('state').toCollection().modify((s:AppState)=>{s.arrivalReminders??=[];});});
     this.version(3).stores({state:"id",evidence:"id,actorId,at",pending:"id,capturedAt",session:"id"});
     this.version(1).stores({ state: "id", evidence: "id,actorId" });
     this.version(2)
@@ -250,7 +252,7 @@ export function validateBackup(input: unknown): Snapshot {
       Number.isSafeInteger(i.amount) &&
         Number.isSafeInteger(i.outstanding) &&
         i.outstanding >= 0 &&
-        i.outstanding <= i.amount,
+        (i.outstanding <= i.amount || !!i.externalId),
       "Invalid reference balance",
     );
   }
@@ -285,6 +287,10 @@ export function validateBackup(input: unknown): Snapshot {
   );
   const ev = new Set(evidence.map((e) => e.id));
   for (const t of state.trips) {
+    if(t.routeSnapshot){
+      assert(Number.isSafeInteger(t.routeSnapshot.revision)&&t.routeSnapshot.revision>=0&&Array.isArray(t.routeSnapshot.points),'Invalid saved itinerary');
+      assert(t.routeSnapshot.points.every(p=>validPoint(p)&&typeof p.id==='string'&&Array.isArray(p.stopIds)&&p.stopIds.every(id=>t.stops.some(st=>st.id===id))),'Broken saved route location or stop reference');
+    }
     assert(
       has(state.vehicles, t.vehicleId) &&
         has(state.shops, t.startShopId) &&

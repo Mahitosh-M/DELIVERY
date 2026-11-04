@@ -1963,3 +1963,19 @@ tbody tr:hover { background:#ffffff03; }
 .weekly-stop input {min-width:0;flex:1;}
 .weekly-stop button {padding:8px;min-width:36px;}
 .route-card ol {padding-left:22px;margin-bottom:16px;}
+.route-map-shell {min-width:0;margin:12px 0;} .route-map {height:320px;width:100%;border-radius:14px;z-index:0;background:#dce4e9;color:#142438;} .route-map-shell small {display:block;margin-top:6px;}
+.report-values {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;font-size:13px;} .report-values dd {margin:0;text-align:right;font-weight:800;} .itinerary-list {padding-left:24px;} .itinerary-list li {padding:12px 8px;border-bottom:1px solid #8884;} .itinerary-list .selected {background:#3578dc22;border-radius:10px;}
+.route-map-pin {border:0;background:none;} .route-map-pin span {display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:white;border:2px solid white;font-size:13px;font-weight:900;box-shadow:0 2px 6px #0005;}
+.route-stop-editor {padding:12px;border:1px solid var(--border,#c4cbd5);border-radius:14px;margin:12px 0;min-width:0;} .route-stop-editor.selected {outline:2px solid #3578dc;} .route-stop-editor .form-grid {grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));} .route-map .leaflet-control-attribution {font-size:10px;}
+.panel.smart-panel,.panel.route-card {padding:16px;}
+.smart-panel>.toolbar {padding:10px 0;}
+.smart-panel .report-values {overflow-wrap:anywhere;}
+
+.delivery-progress-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; margin-top:12px; width:100%; }
+.delivery-progress-step { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; min-height:62px; padding:7px 2px; border:1px solid var(--line, #334155); border-radius:10px; background:rgba(15,23,42,.35); color:inherit; font-size:clamp(10px,2.7vw,12px); font-weight:700; }
+.delivery-progress-step:disabled { opacity:1; cursor:default; }
+.delivery-progress-step:not(:disabled) { border-color:#d4af37; cursor:pointer; }
+.delivery-progress-step:not(:disabled):focus-visible { outline:2px solid #d4af37; outline-offset:2px; }
+.delivery-progress-circle { display:grid; place-items:center; width:24px; height:24px; border:2px solid #64748b; border-radius:50%; color:#cbd5e1; font-size:12px; line-height:1; }
+.delivery-progress-circle.is-complete { background:#15803d; border-color:#4ade80; color:white; }
+.delivery-progress-step:disabled:not(:has(.is-complete)) { color:#94a3b8; }

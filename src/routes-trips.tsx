@@ -1,3 +1,8 @@
+import { DeliveryProgressRow } from './components/DeliveryProgressRow';
+import { isDeliveryLoaded } from './delivery-progress';
+import { nextItineraryPoint } from './smart-routing';
+import {suggestConstrainedStops} from './smart-routing';
+import {PlannerRoutePreview,ActiveRouteAmend} from './trip-route-ui';
 import {wholePaise} from './domain';
 import {useSession} from './integration/session';
 import {bridge} from './integration/connection';
@@ -6,7 +11,7 @@ import {NumberInput} from "./components/ui/number-input";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  Gauge, PackageCheck, Wallet, Fuel, ClipboardList, Flag,
+  Gauge, Wallet, Fuel, ClipboardList, Flag,
   Plus,
   ArrowUp,
   ArrowDown,
@@ -240,44 +245,7 @@ function RouteEditor({
     ];
     set({ ...t, stops });
   }
-  function suggest() {
-    const shop = state.shops.find((s) => s.id === t.startShopId)!;
-    if (shop.lat === undefined || shop.lng === undefined) {
-      notify(
-        "Configure starting shop coordinates before suggesting a geographic order.",
-        true,
-      );
-      return;
-    }
-    let lat = shop.lat,
-      lng = shop.lng;
-    const pending = t.stops.filter((st) => {
-      const c = state.customers.find((c) => c.id === st.customerId)!;
-      return c.lat !== undefined && c.lng !== undefined;
-    });
-    const missing = t.stops.filter((st) => !pending.includes(st));
-    const ordered: Stop[] = [];
-    while (pending.length) {
-      pending.sort((a, b) => {
-        const ca = state.customers.find((c) => c.id === a.customerId)!,
-          cb = state.customers.find((c) => c.id === b.customerId)!;
-        return (
-          (ca.lat! - lat) ** 2 +
-          (ca.lng! - lng) ** 2 -
-          ((cb.lat! - lat) ** 2 + (cb.lng! - lng) ** 2)
-        );
-      });
-      const next = pending.shift()!;
-      ordered.push(next);
-      const c = state.customers.find((c) => c.id === next.customerId)!;
-      lat = c.lat!;
-      lng = c.lng!;
-    }
-    set({ ...t, stops: [...ordered, ...missing] });
-    notify(
-      `Approximate geographic order applied. ${missing.length} stops without coordinates kept at end; review manually.`,
-    );
-  }
+  function suggest(){try{set({...t,stops:suggestConstrainedStops(state,t,catalog.find(r=>r.id===t.routeTemplateId)??t.routeSnapshot?.template)});notify('Geographic suggestion applied within mandatory waypoint segments; locked and time-window stops retained.');}catch(e){notify((e as Error).message,true);}}
   return (
     <Modal
       title={initial.revision ? "Edit route" : "Plan a delivery route"}
@@ -296,7 +264,7 @@ function RouteEditor({
       >
         <div className="form-grid">
           <Field label="Weekly route">
-            <select value={t.routeTemplateId??''} onChange={e=>{const route=catalog.find(r=>r.id===e.target.value);set({...t,routeTemplateId:route?.id,name:route?.name??t.name,date:route?nextRouteDate(route.days,t.date)??t.date:t.date,stops:[]});}}>
+            <select value={t.routeTemplateId??''} onChange={e=>{const route=catalog.find(r=>r.id===e.target.value);set({...t,routeTemplateId:route?.id,name:route?.name??t.name,date:route?nextRouteDate(route.days,t.date)??t.date:t.date,startShopId:route?.startShopId??t.startShopId,endShopId:route?.endShopId??t.endShopId,routeSnapshot:{template:route??null,points:[],capturedAt:new Date().toISOString(),revision:t.routeSnapshot?.revision??0},stops:[]});}}>
               <option value="">Custom / all deliveries</option>
               {t.routeTemplateId&&!catalog.some(r=>r.id===t.routeTemplateId)&&<option value={t.routeTemplateId}>Saved route</option>}
               {catalog.filter(r=>r.active||r.id===t.routeTemplateId).map(r=><option key={r.id} value={r.id}>{r.name} ({routeDays(r)})</option>)}
@@ -407,6 +375,8 @@ function RouteEditor({
             />
           </Field>
         </div>
+        <Field label="Route review / amendment explanation"><textarea value={t.amendmentNote??''} onChange={e=>set({...t,amendmentNote:e.target.value})} placeholder="Required for released changes, exceptional rest-day trips or vehicle relocation"/></Field>
+        <PlannerRoutePreview trip={t} route={catalog.find(r=>r.id===t.routeTemplateId)??t.routeSnapshot?.template}/>
         <div className="split">
           <section>
             <h3>Available deliveries</h3>
@@ -509,7 +479,7 @@ function RouteEditor({
                   <strong>
                     {state.customers.find((c) => c.id === st.customerId)?.name}
                   </strong>
-                  <small>{st.kind}</small>
+                  <small>{st.kind}</small><label><input type="checkbox" checked={st.locked===true} onChange={e=>set({...t,stops:t.stops.map(stop=>stop.id===st.id?{...stop,locked:e.target.checked}:stop)})}/> Lock order</label>
                 </div>
                 <button
                   type="button"
@@ -626,10 +596,11 @@ export function TripsPage() {
 }
 export function TripDetail() {
   const { id } = useParams();
-  const { state, user, act, notify } = useApp();
+  const { state, user, act, notify, busy } = useApp();
   const t = state.trips.find((t) => t.id === id);
   const [modal, setModal] = useState<string | null>(null);
   const [job, setJob] = useState<DeliveryJob | null>(null);
+  const [outcomeMode, setOutcomeMode] = useState<'Delivered' | 'Failed'>('Delivered');
   const [stopCustomer, setStopCustomer] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [driverId, setDriver] = useState("");
@@ -665,7 +636,7 @@ export function TripDetail() {
             <Badge>{t.status}</Badge>
           </p>
         </div>
-        <div className="actions">
+        <div className="actions"><Link className="primary" to={`/trips/${t.id}/navigation`}>Route & navigation</Link><ActiveRouteAmend trip={t}/>
           {!isDriver &&
             !["Closed", "Cancelled", "End submitted"].includes(t.status) && (
               <button
@@ -717,7 +688,7 @@ export function TripDetail() {
               <button className="primary" disabled={!steps.ready} onClick={() => {setNote("");setModal("close");}}>Verify & close shift</button>
             </div>
           </div>
-          {steps.pendingCollections > 0 && <Link className="link" to={`/collections?tripId=${encodeURIComponent(t.id)}`}>Review this trip’s collections</Link>}
+          {steps.pendingCollections > 0 && <Link className="link" to={`/collections?tripId=${encodeURIComponent(t.id)}`}>Review this tripâ€™s collections</Link>}
         </section>
       )}
       <div className={"trip-banner " + (isDriver ? "driver-handover" : "")}>
@@ -795,11 +766,6 @@ export function TripDetail() {
             <Gauge size={23} aria-hidden="true"/> Start shift
           </button>
         )}
-        {isDriver && t.status === "Active" && !t.loaded && (
-          <button className="primary" onClick={() => setModal("load")}>
-            <PackageCheck size={23} aria-hidden="true"/> Confirm packages loaded
-          </button>
-        )}
         {isDriver && t.status === "Active" && (
           <>
             <button
@@ -828,7 +794,7 @@ export function TripDetail() {
           <div className="panel-heading">
             <h3>Ordered stops</h3>
             <span className="muted">
-              {t.loaded ? "Packages loaded" : "Loading not confirmed"}
+              {t.stops.filter(st => st.kind === 'Delivery' && isDeliveryLoaded(t, st)).length} / {t.stops.filter(st => st.kind === 'Delivery').length} deliveries loaded
             </span>
           </div>
           {t.stops.map((st, i) => {
@@ -861,6 +827,15 @@ export function TripDetail() {
                       Delivery paused: {j.sourceBlocked}
                     </p>
                   )}
+                  {j?.sourceBlocked && !isDriver && !st.completed && ['Released','Active'].includes(t.status) && <button onClick={()=>{const note=window.prompt('Review the latest confirmed CISapp pin. Enter the reason. Changes to customer, packages or route must be handled in Trip Planner.');if(note?.trim())perform(()=>act({type:'reviewLocation',id:j.id,note,revision:t.revision}));}}>Review latest source pin</button>}
+                  {isDriver && st.kind === 'Delivery' && !j && <p role="alert" className="notice">Delivery details are missing. Synchronise before loading these boxes.</p>}
+                  {isDriver && j && <DeliveryProgressRow
+                    trip={t} stop={st} job={j} busy={busy || !!t.pendingRouteAcknowledgements?.includes(user.id)}
+                    routeReady={!t.routeSnapshot || !!nextItineraryPoint(t)?.stopIds.includes(st.id)}
+                    onLoad={() => perform(() => act({type:'loadDelivery',tripId:t.id,stopId:st.id}))}
+                    onArrive={() => perform(() => act({type:'arrive',tripId:t.id,stopId:st.id}))}
+                    onOutcome={outcome => {setOutcomeMode(outcome);setJob(j);}}
+                  />}
                   <div className="actions wrap mt-3">
                     <a
                       className="secondary small"
@@ -876,52 +851,10 @@ export function TripDetail() {
                     >
                       <Navigation size={14} /> Navigate
                     </a>
-                    {isDriver &&
-                      t.status === "Active" &&
-                      t.loaded &&
-                      !st.completed && (
-                        <>
-                          {!st.arrivedAt && (
-                            <button
-                              className="secondary small"
-                              onClick={() =>
-                                perform(() =>
-                                  act({
-                                    type: "arrive",
-                                    tripId: t.id,
-                                    stopId: st.id,
-                                  }),
-                                )
-                              }
-                            >
-                              Arrived
-                            </button>
-                          )}
-                          {j ? (
-                            <button
-                              className="primary small"
-                              onClick={() => setJob(j)}
-                            >
-                              Record outcome
-                            </button>
-                          ) : (
-                            <button
-                              className="primary small"
-                              onClick={() =>
-                                perform(() =>
-                                  act({
-                                    type: "visitDone",
-                                    tripId: t.id,
-                                    stopId: st.id,
-                                  }),
-                                )
-                              }
-                            >
-                              Complete visit
-                            </button>
-                          )}
-                        </>
-                      )}
+                    {isDriver && !j && st.kind !== 'Delivery' && t.status === 'Active' && !st.completed && <>
+                      {!st.arrivedAt && <button className="secondary small" onClick={() => perform(() => act({type:'arrive',tripId:t.id,stopId:st.id}))}>Arrived</button>}
+                      <button className="primary small" onClick={() => perform(() => act({type:'visitDone',tripId:t.id,stopId:st.id}))}>Complete visit</button>
+                    </>}
                     {isDriver && t.status === "Active" && (
                       <button
                         className="link"
@@ -1014,14 +947,6 @@ export function TripDetail() {
       {modal === "end" && (
         <OdometerForm trip={t} ending onClose={() => setModal(null)} />
       )}
-      {modal === "load" && (
-        <Confirm
-          title="Confirm packages loaded"
-          description="Confirm the assigned packages have been checked and loaded into this vehicle."
-          onClose={() => setModal(null)}
-          onConfirm={() => act({ type: "load", id: t.id })}
-        />
-      )}
       {modal === "collection" && (
         <CollectionForm
           trip={t}
@@ -1036,6 +961,7 @@ export function TripDetail() {
       {job && (
         <DeliveryOutcome
           job={state.jobs.find((j) => j.id === job.id)!}
+          initialOutcome={outcomeMode}
           onClose={() => setJob(null)}
         />
       )}
@@ -1151,7 +1077,7 @@ export function TripDetail() {
             {modal === "exception" && (
               <p className="notice">
                 Start the note with: Opening photo:, Closing photo:, Unfinished
-                stops:, Settlement:, or Proof JOB_ID:. Record the reason. Job
+                stops:, Route waypoints:, Settlement:, or Proof JOB_ID:. Record the reason. Job
                 IDs:{" "}
                 {t.stops
                   .filter((st) => st.jobId)
@@ -1219,6 +1145,7 @@ function OdometerForm({
                 }
               : {
                   type: "startTrip",
+                  perDeliveryLoading: true,
                   id: trip.id,
                   opening: reading,
                   photo,
@@ -1269,16 +1196,18 @@ function OdometerForm({
 }
 function DeliveryOutcome({
   job,
+  initialOutcome = 'Delivered',
   onClose,
 }: {
   job: DeliveryJob;
+  initialOutcome?: 'Delivered' | 'Failed';
   onClose: () => void;
 }) {
   const { act } = useApp();
   const [outcome, setOutcome] = useState<
     "Delivered" | "Partial" | "Failed" | "Reschedule requested"
-  >("Delivered");
-  const [delivered, setDelivered] = useState(job.remaining);
+  >(initialOutcome);
+  const [delivered, setDelivered] = useState(initialOutcome === 'Failed' ? 0 : job.remaining);
   const [reason, setReason] = useState("Customer closed");
   const [note, setNote] = useState("");
   const [proof, setProof] = useState<string | null>(null);

@@ -1,0 +1,30 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { DeliveryProgressRow } from '../src/components/DeliveryProgressRow';
+import { seed } from './fixtures/seed';
+afterEach(cleanup);
+it('keeps all four steps in a single row and enables them in sequence',()=>{
+ const state=seed(),trip={...state.trips[0],status:'Active' as const,loadingMode:'perDelivery' as const,loaded:false};
+ const stop={...trip.stops[0],completed:false,arrivedAt:undefined,loadedAt:undefined as string|undefined};
+ const job={...state.jobs[0],status:'Assigned' as const},onLoad=vi.fn(),onArrive=vi.fn(),onOutcome=vi.fn();
+ const props={trip,stop,job,onLoad,onArrive,onOutcome};
+ const view=render(<DeliveryProgressRow {...props}/>);
+ expect(screen.getByRole('group',{name:'Delivery steps'}).children).toHaveLength(4);
+ fireEvent.click(screen.getByRole('button',{name:'Mark this delivery loaded'}));expect(onLoad).toHaveBeenCalledOnce();
+ expect(screen.getByRole('button',{name:'Mark arrival for this delivery'})).toBeDisabled();
+ stop.loadedAt='2026-11-03T01:00:00Z';view.rerender(<DeliveryProgressRow {...props}/>);
+ expect(screen.getByRole('button',{name:'Loaded — completed'}).querySelector('.is-complete')).not.toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Mark arrival for this delivery'}));expect(onArrive).toHaveBeenCalledOnce();
+ expect(screen.getByRole('button',{name:'Record delivery'})).toBeDisabled();
+ stop.arrivedAt='2026-11-03T01:01:00Z';view.rerender(<DeliveryProgressRow {...props}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Record failed delivery'}));expect(onOutcome).toHaveBeenLastCalledWith('Failed');
+ fireEvent.click(screen.getByRole('button',{name:'Record delivery'}));expect(onOutcome).toHaveBeenLastCalledWith('Delivered');
+});
+it.each(['Delivered','Failed'] as const)('shows a completed green step for %s and prevents another attempt',(status)=>{
+ const s=seed(),trip={...s.trips[0],status:'Active' as const,loadingMode:'perDelivery' as const};
+ const stop={...trip.stops[0],completed:true,loadedAt:'2026-11-03',arrivedAt:'2026-11-03'};
+ render(<DeliveryProgressRow trip={trip} stop={stop} job={{...s.jobs[0],status}} onLoad={vi.fn()} onArrive={vi.fn()} onOutcome={vi.fn()}/>);
+ const button=screen.getByRole('button',{name:status==='Delivered'?'Delivered — completed':'Failed — recorded'});
+ expect(button.querySelector('.is-complete')).not.toBeNull();
+ for(const button of screen.getAllByRole('button'))expect(button).toBeDisabled();
+});

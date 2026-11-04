@@ -123,6 +123,7 @@ export function seed(): AppState {
       instructions:
         "Fictional sample. Configure actual address before real use.",
       active: true,
+      location: {lat:15.96+i*0.001,lng:76.65+i*0.001,confirmed:true},
     });
     s.invoices.push({
       id: `invoice-${i + 1}`,

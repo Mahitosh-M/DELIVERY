@@ -2,11 +2,11 @@ import {applyCollectionDecisionDates,type CollectionDecisionClaim} from '../coll
 import {type Command} from '../commands';
 import {uuid,now,type Trip,type Fuel,type Audit,type Collection} from '../domain';
 import {tripEvidenceIds} from '../retention';
-﻿import { db,repository,localEvidence,activeIssuer,type PendingCommand } from '../data';
+import { db,repository,localEvidence,activeIssuer,type PendingCommand } from '../data';
 import { bridge,type ConnectedIdentity,type Issuer } from './connection';
 import type {AppState} from '../domain';
 const syncing=new Map<string,Promise<void>>();
-function commandTrip(state:AppState,c:Record<string,any>){return c.tripId??c.value?.tripId??(c.type==='delivery'?state.jobs.find(j=>j.id===c.id)?.tripId:state.trips.some(t=>t.id===c.id)?c.id:null);}
+function commandTrip(state:AppState,c:Record<string,any>){return (c.type==='saveTrip'?c.value?.id:null)??c.tripId??c.value?.tripId??(['delivery','reviewLocation'].includes(c.type)?state.jobs.find(j=>j.id===c.id)?.tripId:state.trips.some(t=>t.id===c.id)?c.id:null);}
 export async function refreshWorkspace(identity:ConnectedIdentity){
  const currentDb=db,before=JSON.stringify(await currentDb.state.get('main'));
  const result=await bridge<{operational:AppState;claims?:CollectionDecisionClaim[]}>(identity.issuer,'pull');
@@ -32,7 +32,7 @@ export async function flushPending(identity:ConnectedIdentity){const key=identit
 if(pending.applyAfterAck && !result?.reviewed)throw new Error('Server did not confirm this review. Update the backend and retry safely.');
 await accountDb.transaction('rw',accountDb.state,accountDb.pending,async()=>{
  if(pending.applyAfterAck && result.reviewed){const current=(await accountDb.state.get('main'))!;
-  const reviewed=result.reviewed;if(reviewed.trip){const n=current.trips.findIndex(t=>t.id===reviewed.trip!.id);if(n>=0)current.trips[n]=reviewed.trip;}
+  const reviewed=result.reviewed;if(reviewed.trip){const n=current.trips.findIndex(t=>t.id===reviewed.trip!.id);if(n>=0)current.trips[n]=reviewed.trip;else current.trips.push(reviewed.trip);}
   for(const fuel of reviewed.fuels){const n=current.fuels.findIndex(f=>f.id===fuel.id);if(n>=0)current.fuels[n]=fuel;}
   for(const collection of reviewed.collections??[]){const n=current.collections.findIndex(c=>c.id===collection.id);if(n>=0)current.collections[n]=collection;}
   for(const event of reviewed.audit)if(!current.audit.some(a=>a.id===event.id))current.audit.push(event);
