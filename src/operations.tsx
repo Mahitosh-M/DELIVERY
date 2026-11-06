@@ -1,3 +1,4 @@
+import { AdminExplanation } from './components/AdminExplanation';
 import {wholePaise} from './domain';
 import {collectionOnDriverScreen} from './collectionVisibility';
 import {NumberInput} from "./components/ui/number-input";
@@ -177,10 +178,10 @@ export function CollectionForm({
           )}
         </div>
         <h3>Relevant CISapp invoices</h3>
-        <small className="muted">
+        <AdminExplanation><small className="muted">
           All selected by default; deselect to choose a subset. Oldest-first
           preview only.
-        </small>
+        </small></AdminExplanation>
         {references.map((i) => (
           <label className="select-row" key={i.id}>
             <input
@@ -229,9 +230,7 @@ export function CollectionForm({
             onChange={setEvidence}
           />
         )}
-        <p className="notice">
-          Pending manager verification. No bank or CISapp balance is updated.
-        </p>
+        <p className="notice">Pending manager verification.<AdminExplanation> No bank or CISapp balance is updated.</AdminExplanation></p>
       </Form>
     </Modal>
   );
@@ -443,9 +442,9 @@ function CollectionReview({
                   Reset oldest-first
                 </button>
               </div>
-              <p className="muted text-xs">
+              <AdminExplanation><p className="muted text-xs">
                 Current CISapp balances are checked atomically on approval.
-              </p>
+              </p></AdminExplanation>
               {refs.map((i) => (
                 <div className="allocation" key={i.id}>
                   <span>
@@ -580,7 +579,7 @@ export function FuelForm({
             />
           </Field>
           <Field label="Total bill (₹)">
-            <NumberInput type="number" min="1" step="1" required value={billAmount} onChange={e=>setBillAmount(e.target.value)} aria-describedby="fuel-total-help" />
+            <NumberInput type="number" min="1" step="1" required value={billAmount} onChange={e=>setBillAmount(e.target.value)} aria-describedby={user.role === "ADMIN" ? "fuel-total-help" : undefined} />
           </Field>
           <Field label="Payment source">
             <select
@@ -592,17 +591,17 @@ export function FuelForm({
             </select>
           </Field>
         </div>
-        <p className="muted" id="fuel-total-help">Enter the amount paid in whole rupees. Attach the fuel bill so the Manager can cross-check its rate and quantity.</p>
+        <AdminExplanation><p className="muted" id="fuel-total-help">Enter the amount paid in whole rupees. Attach the fuel bill so the Manager can cross-check its rate and quantity.</p></AdminExplanation>
         {remainingAdvance <= 0 && <p className="notice">No shop advance remains. Use personal funds; reimbursement is reviewed separately.</p>}
         <EvidenceInput
           label="Diesel receipt photograph"
           value={receipt}
           onChange={setReceipt}
         />
-        <p className="notice">
+        <AdminExplanation><p className="notice">
           Purchased fuel is not necessarily consumed today. Personal
           reimbursement is settled separately.
-        </p>
+        </p></AdminExplanation>
       </Form>
     </Modal>
   );
@@ -632,10 +631,10 @@ export function FuelPage() {
               ? "My diesel claims"
               : "Fuel & reimbursements"}
           </h1>
-          <p>
+          <AdminExplanation><p>
             Fuel bills, approved expense and separate reimbursement
             settlement.
-          </p>
+          </p></AdminExplanation>
         </div>
       </div>
       <div className="panel">
@@ -822,21 +821,21 @@ export function CashPage() {
       <div className="page-title">
         <div>
           <h1>{user.role === "DRIVER" ? "Cash with driver" : "Cash reconciliation"}</h1>
-          <p>
+          <AdminExplanation><p>
             Physical custody and handover. Separate from customer collections.
-          </p>
+          </p></AdminExplanation>
         </div>
       </div>
       <div className="toolbar">
         {tripId && <Link className="secondary" to={`/trips/${tripId}`}>Back to trip</Link>}
         <label className="check"><input type="checkbox" checked={history} onChange={e => setHistory(e.target.checked)} />Show confirmed handovers</label>
       </div>
-      <details className="help-note"><summary>How cash is calculated</summary><p>
+      <AdminExplanation><details className="help-note"><summary>How cash is calculated</summary><p>
         Expected physical cash = opening advance + all reported cash collections
         - reported spending from shop advances. Rejection does not reverse a
         physical cash movement. UPI, bank transfers and personal fuel payments
         do not enter this custody total. Shared shop funds remain separate.
-      </p></details>
+      </p></details></AdminExplanation>
       <div className="card-grid">
         {rows.map((t) => {
           const c = cashSummary(state, t);
@@ -1067,10 +1066,10 @@ export function SalesForm({
         <Field label="Notes">
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
-        <p className="notice">
+        <AdminExplanation><p className="notice">
           A request for review only. No invoice, confirmed order or accounting
           entry is created.
-        </p>
+        </p></AdminExplanation>
       </Form>
     </Modal>
   );

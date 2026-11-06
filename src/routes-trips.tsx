@@ -1,3 +1,4 @@
+import { AdminExplanation } from './components/AdminExplanation';
 import { DeliveryProgressRow } from './components/DeliveryProgressRow';
 import { isDeliveryLoaded } from './delivery-progress';
 import { nextItineraryPoint } from './smart-routing';
@@ -93,7 +94,7 @@ export function RoutesPage() {
       <div className="page-title">
         <div>
           <h1>Route planner</h1>
-          <p>Plan the day. Assign responsibility. Release a clear route.</p>
+          <AdminExplanation><p>Plan the day. Assign responsibility. Release a clear route.</p></AdminExplanation>
         </div>
         <button
           className="primary"
@@ -274,7 +275,7 @@ function RouteEditor({
             </select>
           </Field>
           {catalogError&&<p role="alert" className="notice">Weekly routes unavailable: {catalogError}</p>}
-          {catalog.find(r=>r.id===t.routeTemplateId)&&<div className="summary-box"><strong>{catalog.find(r=>r.id===t.routeTemplateId)!.from} &rarr; {catalog.find(r=>r.id===t.routeTemplateId)!.to}</strong><p>{catalog.find(r=>r.id===t.routeTemplateId)!.stops.map(s=>s.name).join(' / ')}</p><small>Selected-route deliveries are shown below. CISapp delivery requests create daily drafts automatically. Assign the vehicle and driver, review, then release.</small></div>}
+          {catalog.find(r=>r.id===t.routeTemplateId)&&<div className="summary-box"><strong>{catalog.find(r=>r.id===t.routeTemplateId)!.from} &rarr; {catalog.find(r=>r.id===t.routeTemplateId)!.to}</strong><p>{catalog.find(r=>r.id===t.routeTemplateId)!.stops.map(s=>s.name).join(' / ')}</p><AdminExplanation><small>Selected-route deliveries are shown below. CISapp delivery requests create daily drafts automatically. Assign the vehicle and driver, review, then release.</small></AdminExplanation></div>}
           <Field label="Route name">
             <input
               required
@@ -474,9 +475,9 @@ function RouteEditor({
                 Suggest order
               </button>
             </div>
-            <small className="muted">
+            <AdminExplanation><small className="muted">
               Approximate coordinate-based order, no road-distance estimate.
-            </small>
+            </small></AdminExplanation>
             {t.stops.map((st, i) => (
               <div className="stop-order" key={st.id}>
                 <span className="stop-number">{i + 1}</span>
@@ -539,11 +540,7 @@ export function TripsPage() {
           <h1>
             {user.role === "DRIVER" ? "My trips" : "Trips & shift review"}
           </h1>
-          <p>
-            {user.role === "DRIVER"
-              ? "Your assigned vehicle, stops and shift checklist."
-              : "Review vehicle activity, evidence and driver responsibility."}
-          </p>
+          <AdminExplanation><p>Review vehicle activity, evidence and driver responsibility.</p></AdminExplanation>
         </div>
         <label className="check">
           <input
@@ -1326,10 +1323,10 @@ function DeliveryOutcome({
           <MapPin size={14} />{" "}
           {location ? "Location captured" : "Add optional location"}
         </button>
-        <p className="muted text-xs">
+        <AdminExplanation><p className="muted text-xs">
           Remaining packages require manager reconciliation. Invoice values are
           not changed.
-        </p>
+        </p></AdminExplanation>
       </Form>
     </Modal>
   );
