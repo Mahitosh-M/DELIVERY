@@ -81,11 +81,12 @@ export function RoutesPage() {
   const { state, user, act } = useApp();
   const [edit, setEdit] = useState<Trip | null>(null);
   const [date, setDate] = useState(businessDate());
+  const [automaticOnly, setAutomaticOnly] = useState(false);
   const [release, setRelease] = useState<Trip | null>(null);
   const trips = state.trips.filter(t=>!t.purgedAt).filter(
     (t) =>
       (user.role === "ADMIN" || user.shopIds.includes(t.startShopId)) &&
-      (!date || t.date === date),
+      (!date || t.date === date) && (!automaticOnly || t.autoCreated && t.status === "Draft"),
   );
   return (
     <>
@@ -119,12 +120,13 @@ export function RoutesPage() {
           <input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => { setAutomaticOnly(false); setDate(e.target.value); }}
           />
         </Field>
-        <button className="secondary" onClick={() => setDate("")}>
+        <button className="secondary" onClick={() => { setAutomaticOnly(false); setDate(""); }}>
           All dates
         </button>
+        <button className="secondary" aria-pressed={automaticOnly} onClick={() => { setDate(""); setAutomaticOnly(true); }}>Automatic drafts</button>
       </div>
       <div className="card-grid">
         {trips.map((t) => (
@@ -138,12 +140,13 @@ export function RoutesPage() {
               {state.shops.find((s) => s.id === t.startShopId)?.name} &rarr;{" "}
               {state.shops.find((s) => s.id === t.endShopId)?.name}
             </p>
+            {t.autoCreated && (!t.vehicleId || !t.primaryDriverId) && <p className="notice">Automatic draft. Select a vehicle and primary driver in Edit route before release.</p>}
             <div className="route-meta">
               <Truck size={17} />
-              {state.vehicles.find((v) => v.id === t.vehicleId)?.registration}
+              {state.vehicles.find((v) => v.id === t.vehicleId)?.registration || "Vehicle not assigned"}
             </div>
             <p>
-              {state.users.find((u) => u.id === t.primaryDriverId)?.name}
+              {state.users.find((u) => u.id === t.primaryDriverId)?.name || "Driver not assigned"}
               {t.companionId ? " + companion" : ""}
             </p>
             <div className="flex-between">
@@ -158,7 +161,7 @@ export function RoutesPage() {
                   </button>
                 )}
                 {t.status === "Draft" && (
-                  <button className="primary" onClick={() => setRelease(t)}>
+                  <button className="primary" disabled={!t.vehicleId || !t.primaryDriverId} onClick={() => setRelease(t)}>
                     Release
                   </button>
                 )}
@@ -271,7 +274,7 @@ function RouteEditor({
             </select>
           </Field>
           {catalogError&&<p role="alert" className="notice">Weekly routes unavailable: {catalogError}</p>}
-          {catalog.find(r=>r.id===t.routeTemplateId)&&<div className="summary-box"><strong>{catalog.find(r=>r.id===t.routeTemplateId)!.from} ? {catalog.find(r=>r.id===t.routeTemplateId)!.to}</strong><p>{catalog.find(r=>r.id===t.routeTemplateId)!.stops.map(s=>s.name).join(' ? ')}</p><small>Selected-route deliveries are shown below. Weekly schedules do not create or release trips automatically.</small></div>}
+          {catalog.find(r=>r.id===t.routeTemplateId)&&<div className="summary-box"><strong>{catalog.find(r=>r.id===t.routeTemplateId)!.from} &rarr; {catalog.find(r=>r.id===t.routeTemplateId)!.to}</strong><p>{catalog.find(r=>r.id===t.routeTemplateId)!.stops.map(s=>s.name).join(' / ')}</p><small>Selected-route deliveries are shown below. CISapp delivery requests create daily drafts automatically. Assign the vehicle and driver, review, then release.</small></div>}
           <Field label="Route name">
             <input
               required
@@ -322,10 +325,11 @@ function RouteEditor({
             </select>
           </Field>
           <Field label="Vehicle">
-            <select
+            <select required
               value={t.vehicleId}
               onChange={(e) => set({ ...t, vehicleId: e.target.value })}
             >
+              <option value="">Select vehicle</option>
               {state.vehicles
                 .filter((v) => v.active)
                 .map((v) => (
@@ -336,10 +340,11 @@ function RouteEditor({
             </select>
           </Field>
           <Field label="Primary responsible driver">
-            <select
+            <select required
               value={t.primaryDriverId}
               onChange={(e) => set({ ...t, primaryDriverId: e.target.value })}
             >
+              <option value="">Select primary driver</option>
               {drivers.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -743,7 +748,7 @@ export function TripDetail() {
       </div>
       <div className={"actions wrap mb-5 " + (isDriver ? "driver-action-grid" : "")}>
         {!isDriver && t.status === "Draft" && (
-          <button className="primary" onClick={() => setModal("release")}>
+          <button className="primary" disabled={!t.vehicleId || !t.primaryDriverId} onClick={() => setModal("release")}>
             <Truck size={23} aria-hidden="true"/> Release route
           </button>
         )}
