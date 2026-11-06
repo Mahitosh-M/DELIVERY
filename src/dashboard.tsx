@@ -1,3 +1,4 @@
+import { AdminExplanation } from './components/AdminExplanation';
 import {ActionTiles} from "./components/ui/action-tiles";
 import {Users,Settings2,ClipboardList} from "lucide-react";
 import {ResponsiveTable} from "./components/ui/responsive-table";
@@ -251,7 +252,7 @@ function DriverHome() {
         <div>
           <span className="eyebrow">DRIVER WORKSPACE · {today}</span>
           <h1>Ready for the road.</h1>
-          <p>{user.name} · Your assigned work on this device.</p>
+          <p>{user.name}</p>
         </div>
       </div>
       <ActionTiles label="Driver quick actions" items={[
@@ -403,7 +404,7 @@ export function ReportsPage() {
       <div className="page-title">
         <div>
           <h1>Operations analytics</h1>
-          <p>Connected operational activity and verified collections.</p>
+          <AdminExplanation><p>Connected operational activity and verified collections.</p></AdminExplanation>
         </div>
         <button className="primary" onClick={exportCsv}>
           <Download size={16} /> Export CSV
@@ -482,14 +483,14 @@ export function ReportsPage() {
           </button>
         </div>
       </div>
-      <details className="help-note"><summary>About these figures</summary><p>
+      <AdminExplanation><details className="help-note"><summary>About these figures</summary><p>
         Jobs use scheduled dates; collections use recorded dates; fuel uses
         purchase dates; shifts use trip dates. Distance is approved odometer
         distance. Driver distance is attributed to the current primary driver,
         not divided between driver-change segments. Outstanding is the current
         balance for selected shops, independent of date, driver and vehicle
         filters.
-      </p></details>
+      </p></details></AdminExplanation>
       <div className="metric-grid">
         <Metric
           label="Delivery completion"
@@ -526,7 +527,7 @@ export function ReportsPage() {
             {r.jobs.filter((j) => j.status === "Failed").length} /{" "}
             {r.jobs.filter((j) => j.status === "Partial").length}
           </strong>
-          <p>Separate current job outcomes</p>
+          <AdminExplanation><p>Separate current job outcomes</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>Pending delivery jobs</small>
@@ -537,7 +538,7 @@ export function ReportsPage() {
               ).length
             }
           </strong>
-          <p>Undelivered scheduled jobs</p>
+          <AdminExplanation><p>Undelivered scheduled jobs</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>Vehicle utilisation</small>
@@ -551,7 +552,7 @@ export function ReportsPage() {
             }{" "}
             vehicle-days
           </strong>
-          <p>Distinct vehicle / date pairs with a started shift</p>
+          <AdminExplanation><p>Distinct vehicle / date pairs with a started shift</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>Sales requests / exceptions</small>
@@ -563,7 +564,7 @@ export function ReportsPage() {
             }{" "}
             / {r.trips.reduce((n, t) => n + t.exceptions.length, 0)}
           </strong>
-          <p>Requests received / approved exceptions on selected trips</p>
+          <AdminExplanation><p>Requests received / approved exceptions on selected trips</p></AdminExplanation>
         </div>
       </div>
       <div className="split">
@@ -653,17 +654,17 @@ export function ReportsPage() {
         <div className="metric">
           <small>Reference value delivered</small>
           <strong>{money(r.deliveredValue)}</strong>
-          <p>Full delivered jobs only · CISapp invoices</p>
+          <AdminExplanation><p>Full delivered jobs only · CISapp invoices</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>CISapp outstanding snapshot</small>
           <strong>{money(r.outstanding)}</strong>
-          <p>Selected shops · latest CISapp balances</p>
+          <AdminExplanation><p>Selected shops · latest CISapp balances</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>Packages delivered</small>
           <strong>{r.packages}</strong>
-          <p>All attempts for scheduled cohort</p>
+          <AdminExplanation><p>All attempts for scheduled cohort</p></AdminExplanation>
         </div>
         <div className="metric">
           <small>Fuel expense / completed job</small>
@@ -672,7 +673,7 @@ export function ReportsPage() {
               ? money(Math.round(r.cost / r.completed))
               : "Insufficient data"}
           </strong>
-          <p>Period fuel expense only</p>
+          <AdminExplanation><p>Period fuel expense only</p></AdminExplanation>
         </div>
       </div>
       <div className="split mt-5">
@@ -719,10 +720,10 @@ export function ReportsPage() {
                         : "Insufficient data"}
                     </span>
                   </p>
-                  <p className="muted text-xs">
+                  <AdminExplanation><p className="muted text-xs">
                     Measured efficiency uses all approved fill history, not only
                     the filtered period.
-                  </p>
+                  </p></AdminExplanation>
                 </div>
               );
             })}

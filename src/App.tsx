@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   HardDrive,
   ChevronDown,
+  BookOpen,
 } from "lucide-react";
 import { useApp, AppProvider } from "./context";
 import { Dashboard, ReportsPage } from "./dashboard";
@@ -178,6 +179,7 @@ function Shell() {
               </NavLink>
             </React.Fragment>
           ))}
+          {user.role === "ADMIN" && <a href="https://cisapp-236ab.web.app/how-it-works" target="_blank" rel="noreferrer"><BookOpen size={18} /><span>How it works</span></a>}
         </nav>
         <div className="sidebar-bottom"><small>CIS Dispatch</small></div>
       </aside>}

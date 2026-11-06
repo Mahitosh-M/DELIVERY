@@ -1,3 +1,4 @@
+import { AdminExplanation } from './components/AdminExplanation';
 import {ResponsiveTable} from "./components/ui/responsive-table";
 import {CISAPP_URL} from "./integration/connection";
 import { useState } from "react";
@@ -318,10 +319,10 @@ function JobReview({ id, onClose }: { id: string; onClose: () => void }) {
               onChange={(e) => setNote(e.target.value)}
             />
           </Field>
-          <p className="muted text-xs">
+          <AdminExplanation><p className="muted text-xs">
             Cancellation is recorded in history. Rescheduling retains previous
             attempts.
-          </p>
+          </p></AdminExplanation>
         </Form>
       )}
     </Modal>
